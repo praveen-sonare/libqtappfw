@@ -31,6 +31,7 @@ enum MessageId {
 enum MessageType {
 	GenericMessage,
 	TelephonyEventMessage,
+	WeatherEventMessage,
 };
 
 class Message : public QObject

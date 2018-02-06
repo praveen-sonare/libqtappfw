@@ -17,6 +17,7 @@
 #include "message.h"
 #include "messageengine.h"
 #include "telephonymessage.h"
+#include "weathermessage.h"
 
 #include <QJsonArray>
 
@@ -74,6 +75,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	if (api == "telephony") {
 		message = new TelephonyMessage;
 		type = TelephonyEventMessage;
+	} else if (api == "weather") {
+		message = new WeatherMessage;
+		type = WeatherEventMessage;
 	} else {
 		message = new Message;
 		type = GenericMessage;
