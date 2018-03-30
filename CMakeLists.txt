@@ -16,12 +16,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtappfw.pc
 
 add_library(qtappfw SHARED message.cpp messageengine.cpp
 	bluetooth.cpp bluetoothmessage.cpp
-	telephony.cpp telephonymessage.cpp)
+	telephony.cpp telephonymessage.cpp
+	mediaplayer.cpp mediaplayermessage.cpp)
 target_link_libraries(qtappfw Qt5::WebSockets)
 set_target_properties(qtappfw PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1
-	PUBLIC_HEADER "message.h;messageengine.h;bluetooth.h;bluetoothmessage.h;telephony.h;telephonymessage.h")
+	PUBLIC_HEADER "message.h;messageengine.h;mediaplayer.h;mediaplayermessage.h;bluetooth.h;bluetoothmessage.h;telephony.h;telephonymessage.h")
 target_include_directories(qtappfw PRIVATE .)
 install(TARGETS qtappfw
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

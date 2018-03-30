@@ -17,6 +17,7 @@
 #include "message.h"
 #include "messageengine.h"
 #include "bluetoothmessage.h"
+#include "mediaplayermessage.h"
 #include "telephonymessage.h"
 
 #include <QJsonArray>
@@ -78,6 +79,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	} else if (api == "telephony") {
 		message = new TelephonyMessage;
 		type = TelephonyEventMessage;
+	} else if (api == "mediaplayer") {
+		message = new MediaplayerMessage;
+		type = MediaplayerEventMessage;
 	} else {
 		message = new Message;
 		type = GenericMessage;
