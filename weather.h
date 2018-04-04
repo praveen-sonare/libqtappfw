@@ -36,8 +36,8 @@ class Weather : public QObject
 		QString condition() { return m_condition; }
 
 	signals:
-		void temperatureChanged(QString);
-		void conditionChanged(QString);
+		void temperatureChanged(QString temperature);
+		void conditionChanged(QString condition);
 
 	private:
 		MessageEngine *m_mloop;
