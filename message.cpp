@@ -103,7 +103,12 @@ bool Message::fromJDoc(QJsonDocument jdoc)
 			return false;
 		}
 		auto status_iter = request.find("status");
+		auto info_iter = request.find("info");
+		auto response_iter = payload.find("response");
+		auto response = response_iter.value().toObject();
 		m_reply_status = status_iter.value().toString();
+		m_reply_info = info_iter.value().toString();
+		m_reply_data = response;
 		m_reply = true;
 	} else if (msgid == Event) {
 		// If event, save data object

@@ -63,6 +63,16 @@ class Message : public QObject
 			return m_event_data;
 		}
 
+		inline QString replyInfo() const
+		{
+			return m_reply_info;
+		}
+
+		inline QJsonObject replyData() const
+		{
+			return m_reply_data;
+		}
+
  		inline bool isEvent() const
 		{
 			return m_event;
@@ -80,9 +90,9 @@ class Message : public QObject
 
 	protected:
 		bool m_event, m_init, m_reply;
-		QString m_event_api, m_event_name, m_reply_status, m_reply_uuid;
+		QString m_event_api, m_event_name, m_reply_info, m_reply_status, m_reply_uuid;
 		QJsonDocument m_jdoc;
-		QJsonObject m_event_data;
+		QJsonObject m_event_data, m_reply_data;
 };
 
 #endif // MESSAGE_H
