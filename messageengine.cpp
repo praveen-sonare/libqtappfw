@@ -16,6 +16,7 @@
 
 #include "message.h"
 #include "messageengine.h"
+#include "mediaplayermessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
 
@@ -78,6 +79,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	} else if (api == "weather") {
 		message = new WeatherMessage;
 		type = WeatherEventMessage;
+	} else if (api == "mediaplayer") {
+		message = new MediaplayerMessage;
+		type = MediaplayerEventMessage;
 	} else {
 		message = new Message;
 		type = GenericMessage;

@@ -32,6 +32,7 @@ enum MessageType {
 	GenericMessage,
 	TelephonyEventMessage,
 	WeatherEventMessage,
+	MediaplayerEventMessage,
 };
 
 class Message : public QObject
