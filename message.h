@@ -32,6 +32,7 @@ enum MessageId {
 enum MessageType {
 	GenericMessage,
 	TelephonyEventMessage,
+	BluetoothEventMessage,
 };
 
 class Message : public QObject
