@@ -33,6 +33,7 @@ enum MessageType {
 	TelephonyEventMessage,
 	WeatherEventMessage,
 	MediaplayerEventMessage,
+	BluetoothEventMessage,
 };
 
 class Message : public QObject

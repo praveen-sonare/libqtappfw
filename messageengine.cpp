@@ -16,6 +16,7 @@
 
 #include "message.h"
 #include "messageengine.h"
+#include "bluetoothmessage.h"
 #include "mediaplayermessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
@@ -73,7 +74,10 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	MessageType type;
 	// FIXME: This should be rewritten using a factory class with a
 	// parser parameter to remove API specific handling here
-	if (api == "telephony") {
+	if (api == "Bluetooth-Manager") {
+		message = new BluetoothMessage;
+		type = BluetoothEventMessage;
+	} else if (api == "telephony") {
 		message = new TelephonyMessage;
 		type = TelephonyEventMessage;
 	} else if (api == "weather") {
