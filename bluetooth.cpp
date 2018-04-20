@@ -27,6 +27,9 @@ Bluetooth::Bluetooth (QUrl &url, QObject * parent) :
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Bluetooth::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Bluetooth::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Bluetooth::onMessageReceived);
+
+    uuids.insert("a2dp", "0000110a-0000-1000-8000-00805f9b34fb");
+    uuids.insert("avrcp", "0000110e-0000-1000-8000-00805f9b34fb");
 }
 
 Bluetooth::~Bluetooth()
@@ -109,6 +112,8 @@ void Bluetooth::connect(QString address, QString uuid)
     BluetoothMessage *tmsg = new BluetoothMessage();
     QJsonObject parameter;
 
+    uuid = process_uuid(uuid);
+
     parameter.insert("value", address);
     parameter.insert("uuid", uuid);
     tmsg->createRequest("connect", parameter);
@@ -125,6 +130,8 @@ void Bluetooth::disconnect(QString address, QString uuid)
 {
     BluetoothMessage *tmsg = new BluetoothMessage();
     QJsonObject parameter;
+
+    uuid = process_uuid(uuid);
 
     parameter.insert("value", address);
     parameter.insert("uuid", uuid);
@@ -143,6 +150,18 @@ void Bluetooth::send_confirmation()
     generic_command("send_confirmation", "yes");
 }
 
+void Bluetooth::set_avrcp_controls(QString address, QString cmd)
+{
+    BluetoothMessage *tmsg = new BluetoothMessage();
+    QJsonObject parameter;
+
+    parameter.insert("Address", address);
+    parameter.insert("value", cmd);
+    tmsg->createRequest("set_avrcp_controls", parameter);
+    m_mloop->sendMessage(tmsg);
+    tmsg->deleteLater();
+}
+
 void Bluetooth::onConnected()
 {
     QStringListIterator eventIterator(events);
@@ -159,6 +178,9 @@ void Bluetooth::onConnected()
 
     // get initial power state
     generic_command("power", QString());
+
+    // send initial list
+    generic_command("discovery_result", "");
 }
 
 void Bluetooth::onDisconnected()

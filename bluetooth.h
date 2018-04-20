@@ -49,6 +49,7 @@ class Bluetooth : public QObject
         Q_INVOKABLE void disconnect(QString address);
 
         Q_INVOKABLE void send_confirmation(void);
+        Q_INVOKABLE void set_avrcp_controls(QString address, QString cmd);
 
         bool power() const { return m_power; };
         bool discoverable() const { return m_discoverable; };
@@ -73,12 +74,15 @@ class Bluetooth : public QObject
         void onDisconnected();
         void onMessageReceived(MessageType, Message*);
 
+        QString process_uuid(QString uuid) { if (uuid.length() == 36) return uuid; return uuids.value(uuid); };
         bool isDiscoveryListResponse(Message *tmsg) { return (tmsg->replyInfo() == "BT - Scan Result is Displayed"); };
         bool isPowerResponse(Message *tmsg) { return (tmsg->replyInfo() == "Radio - Power set"); };
 
         // values
         bool m_power;
         bool m_discoverable;
+
+        QMap<QString, QString> uuids;
 
         const QStringList events {
             "connection",
