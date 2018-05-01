@@ -29,14 +29,18 @@ Message::Message()
 
 bool Message::createRequest(QString api, QString verb, QJsonValue parameter)
 {
-	QJsonArray *request = new QJsonArray;
-	request->append(Call);
-	request->append(9999);
-	request->append(api + (QString)("/") + verb);
-	request->append(QJsonValue(parameter));
+	if (!m_request.isEmpty()){
+		qWarning("Message instance has already been used. Cannot send another request.");
+		return false;
+	}
+
+	m_request.append(Call);
+	m_request.append(9999);
+	m_request.append(api + (QString)("/") + verb);
+	m_request.append(QJsonValue(parameter));
 
 	QJsonDocument jdoc;
-	jdoc.setArray(*request);
+	jdoc.setArray(m_request);
 
 	m_jdoc = jdoc;
 	m_init = true;
