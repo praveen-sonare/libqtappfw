@@ -18,6 +18,7 @@
 #define MESSAGE_H
 
 #include <QObject>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -92,6 +93,7 @@ class Message : public QObject
 	protected:
 		bool m_event, m_init, m_reply;
 		QString m_event_api, m_event_name, m_reply_info, m_reply_status, m_reply_uuid;
+		QJsonArray m_request;
 		QJsonDocument m_jdoc;
 		QJsonObject m_event_data, m_reply_data;
 };
