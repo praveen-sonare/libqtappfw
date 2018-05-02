@@ -18,6 +18,7 @@
 #include "messageengine.h"
 #include "bluetoothmessage.h"
 #include "mediaplayermessage.h"
+#include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
 
@@ -25,6 +26,7 @@
 
 MessageEngine::MessageEngine(const QUrl &url, QObject *parent) :
 	QObject(parent),
+	m_callid(0),
 	m_url(url)
 {
 	connect(&m_websocket, &QWebSocket::connected, this, &MessageEngine::onConnected);
@@ -33,14 +35,31 @@ MessageEngine::MessageEngine(const QUrl &url, QObject *parent) :
 	m_websocket.open(url);
 }
 
+unsigned int MessageEngine::requestCallId()
+{
+	int callid;
+
+	m_mutex.lock();
+	callid = ++m_callid;
+	m_mutex.unlock();
+
+	return callid;
+}
+
 bool MessageEngine::sendMessage(Message *message)
 {
 	if (!message->isValid())
 		return false;
 
-	qint64 size = m_websocket.sendTextMessage(message->toJson().data());
+	auto callid = requestCallId();
+	message->setCallId(callid);
+
+	QByteArray data = message->toJson().data();
+	qint64 size = m_websocket.sendTextMessage(data);
 	if (size == 0)
 		return false;
+
+	m_calls.insert(callid, data);
 
 	return true;
 }
@@ -67,28 +86,46 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	}
 
 	QJsonArray msg = jdoc.array();
-	QStringList api_str_list = msg[1].toString().split(QRegExp("/"));
-	QString api = api_str_list[0];
+	int msgid = msg[0].toInt();
 
 	Message *message;
 	MessageType type;
-	// FIXME: This should be rewritten using a factory class with a
-	// parser parameter to remove API specific handling here
-	if (api == "Bluetooth-Manager") {
-		message = new BluetoothMessage;
-		type = BluetoothEventMessage;
-	} else if (api == "telephony") {
-		message = new TelephonyMessage;
-		type = TelephonyEventMessage;
-	} else if (api == "weather") {
-		message = new WeatherMessage;
-		type = WeatherEventMessage;
-	} else if (api == "mediaplayer") {
-		message = new MediaplayerMessage;
-		type = MediaplayerEventMessage;
-	} else {
-		message = new Message;
-		type = GenericMessage;
+
+	switch (msgid) {
+	case RetOk:
+	case RetErr: {
+		auto callid = msg[1].toString().toInt();
+		message = new ResponseMessage(m_calls[callid]);
+		type = ResponseRequestMessage;
+		m_calls.remove(callid);
+		break;
+	}
+	case Event: {
+		QStringList api_str_list = msg[1].toString().split(QRegExp("/"));
+		QString api = api_str_list[0];
+
+		// FIXME: This should be rewritten using a factory class with a
+		// parser parameter to remove API specific handling here
+		if (api == "Bluetooth-Manager") {
+			message = new BluetoothMessage;
+			type = BluetoothEventMessage;
+		} else if (api == "telephony") {
+			message = new TelephonyMessage;
+			type = TelephonyEventMessage;
+		} else if (api == "weather") {
+			message = new WeatherMessage;
+			type = WeatherEventMessage;
+		} else if (api == "mediaplayer") {
+			message = new MediaplayerMessage;
+			type = MediaplayerEventMessage;
+		} else {
+			message = new Message;
+			type = GenericMessage;
+		}
+		break;
+	}
+	default:
+		break;
 	}
 
 	if (message->fromJDoc(jdoc) == false) {

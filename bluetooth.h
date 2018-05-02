@@ -75,8 +75,6 @@ class Bluetooth : public QObject
         void onMessageReceived(MessageType, Message*);
 
         QString process_uuid(QString uuid) { if (uuid.length() == 36) return uuid; return uuids.value(uuid); };
-        bool isDiscoveryListResponse(Message *tmsg) { return (tmsg->replyInfo() == "BT - Scan Result is Displayed"); };
-        bool isPowerResponse(Message *tmsg) { return (tmsg->replyInfo() == "Radio - Power set"); };
 
         // values
         bool m_power;

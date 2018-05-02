@@ -34,15 +34,12 @@ bool Message::createRequest(QString api, QString verb, QJsonValue parameter)
 		return false;
 	}
 
-	m_request.append(Call);
-	m_request.append(9999);
-	m_request.append(api + (QString)("/") + verb);
-	m_request.append(QJsonValue(parameter));
+	m_request["msgid"] = Call;
+	m_request["callid"] = 0;
+	m_request["api"] = api;
+	m_request["verb"] = verb;
+	m_request["parameter"] = parameter;
 
-	QJsonDocument jdoc;
-	jdoc.setArray(m_request);
-
-	m_jdoc = jdoc;
 	m_init = true;
 
 	return true;
@@ -50,7 +47,7 @@ bool Message::createRequest(QString api, QString verb, QJsonValue parameter)
 
 bool Message::fromJson(QByteArray jsonData)
 {
-        QJsonDocument jdoc(QJsonDocument::fromJson(jsonData));
+	QJsonDocument jdoc(QJsonDocument::fromJson(jsonData));
 
 	if (jdoc.isNull()) {
 		qWarning("Imported invalid JSON: empty appfw message");
@@ -142,5 +139,14 @@ bool Message::fromJDoc(QJsonDocument jdoc)
 
 QByteArray Message::toJson(QJsonDocument::JsonFormat format)
 {
-	return m_jdoc.toJson(format).data();
+	QJsonArray array;
+	array.append(m_request["msgid"].toInt());
+	array.append(m_request["callid"].toInt());
+	array.append(m_request["api"].toString() + "/" + m_request["verb"].toString());
+	array.append(m_request["parameter"].toJsonValue());
+
+	QJsonDocument jdoc;
+	jdoc.setArray(array);
+
+	return jdoc.toJson(format).data();
 }

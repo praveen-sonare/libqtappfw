@@ -17,6 +17,7 @@
 #ifndef MESSAGEENGINE_H
 #define MESSAGEENGINE_H
 
+#include <QMutex>
 #include <QThread>
 #include <QUrl>
 #include <QWebSocket>
@@ -29,6 +30,7 @@ class MessageEngine : public QObject
 	public:
 		explicit MessageEngine(const QUrl &url, QObject *parent = Q_NULLPTR);
 		bool sendMessage(Message *message);
+		unsigned int requestCallId();
 
 	Q_SIGNALS:
 		void disconnected();
@@ -42,7 +44,10 @@ class MessageEngine : public QObject
 
 	private:
 		QWebSocket m_websocket;
+		QMap<qint32, QByteArray> m_calls;
 		QUrl m_url;
+		QMutex m_mutex;
+		unsigned int m_callid;
 };
 
 #endif // MESSAGEENGINE_H

@@ -18,6 +18,7 @@
 #include "messageengine.h"
 #include "bluetooth.h"
 #include "bluetoothmessage.h"
+#include "responsemessage.h"
 
 Bluetooth::Bluetooth (QUrl &url, QObject * parent) :
     QObject(parent),
@@ -214,11 +215,13 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
         } else if (tmsg->isDeviceUpdatedEvent()) {
             emit deviceUpdatedEvent(tmsg->eventData());
         }
-    } else if (msg->isReply() && type == GenericMessage) {
-        if (this->isDiscoveryListResponse(msg)) {
-            emit deviceListEvent(msg->replyData());
-        } else if (this->isPowerResponse(msg)) {
-            m_power = msg->replyData().value("power").toString() == "on";
+    } else if (msg->isReply() && type == ResponseRequestMessage) {
+        ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
+
+        if (tmsg->requestVerb() == "discovery_result") {
+            emit deviceListEvent(tmsg->replyData());
+        } else if (tmsg->requestVerb() == "power") {
+            m_power = tmsg->replyData().value("power").toString() == "on";
             emit powerChanged(m_power);
         }
     }
