@@ -56,7 +56,7 @@ void Bluetooth::setPower(bool state)
 
     m_power = state;
 
-    emit powerChanged();
+    emit powerChanged(m_power);
 }
 
 void Bluetooth::setDiscoverable(bool state)
@@ -219,7 +219,7 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
             emit deviceListEvent(msg->replyData());
         } else if (this->isPowerResponse(msg)) {
             m_power = msg->replyData().value("power").toString() == "on";
-            emit powerChanged();
+            emit powerChanged(m_power);
         }
     }
 
