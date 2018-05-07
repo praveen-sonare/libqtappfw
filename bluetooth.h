@@ -55,7 +55,7 @@ class Bluetooth : public QObject
         bool discoverable() const { return m_discoverable; };
 
     signals:
-        void powerChanged();
+        void powerChanged(bool state);
         void discoverableChanged();
 
         void connectionEvent(QJsonObject data);
