@@ -43,8 +43,8 @@ class Mediaplayer : public QObject
         Q_INVOKABLE void loop(int);
 
     signals:
-        void playlistChanged(QJsonObject playlist);
-        void metadataChanged(QJsonObject metadata);
+        void playlistChanged(QVariantMap playlist);
+        void metadataChanged(QVariantMap metadata);
 
     private:
         MessageEngine *m_mloop;

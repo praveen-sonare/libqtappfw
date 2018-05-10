@@ -161,9 +161,9 @@ void Mediaplayer::onMessageReceived(MessageType type, Message *message)
 
         if (tmsg->isEvent()) {
             if (tmsg->isPlaylistEvent()) {
-                emit playlistChanged(tmsg->eventData());
+                emit playlistChanged(tmsg->eventData().toVariantMap());
             } else if (tmsg->isMetadataEvent()) {
-                emit metadataChanged(tmsg->eventData());
+                emit metadataChanged(tmsg->eventData().toVariantMap());
             }
         }
     }
