@@ -18,6 +18,7 @@
 #include "messageengine.h"
 #include "bluetoothmessage.h"
 #include "mediaplayermessage.h"
+#include "pbapmessage.h"
 #include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
@@ -109,6 +110,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		if (api == "Bluetooth-Manager") {
 			message = new BluetoothMessage;
 			type = BluetoothEventMessage;
+		} else if (api == "bluetooth-pbap") {
+			message = new PbapMessage;
+			type = PbapEventMessage;
 		} else if (api == "telephony") {
 			message = new TelephonyMessage;
 			type = TelephonyEventMessage;

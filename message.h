@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Konsulko Group
+ * Copyright (C) 2017, 2018 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ enum MessageType {
 	WeatherEventMessage,
 	MediaplayerEventMessage,
 	BluetoothEventMessage,
+	PbapEventMessage,
 };
 
 class Message : public QObject
