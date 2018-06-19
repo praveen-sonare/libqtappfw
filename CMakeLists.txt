@@ -21,7 +21,7 @@ add_library(qtappfw SHARED message.cpp messageengine.cpp
 	pbap.cpp pbapmessage.cpp
 	telephony.cpp telephonymessage.cpp
 	weather.cpp weathermessage.cpp)
-target_link_libraries(qtappfw Qt5::WebSockets)
+target_link_libraries(qtappfw Qt5::WebSockets vcard)
 set_target_properties(qtappfw PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

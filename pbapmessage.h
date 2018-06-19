@@ -24,6 +24,8 @@ class PbapMessage : public Message
     Q_OBJECT
     public:
         bool createRequest(QString verb, QJsonObject parameter);
+        bool isStatusEvent() {return (this->eventName() == "status"); };
+        bool connected() { return m_event_data.find("connected").value().toBool(); };
 
     private:
         QStringList verbs {
@@ -31,6 +33,9 @@ class PbapMessage : public Message
             "entry",
             "history",
             "search",
+            "status",
+            "subscribe",
+            "unsubscribe",
         };
 };
 
