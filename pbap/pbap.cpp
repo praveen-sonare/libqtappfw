@@ -175,6 +175,8 @@ void Pbap::updateCalls(QString vcards)
 {
     QString name, number, datetime, type;
 
+    m_calls.clear();
+
     QList<vCard> history_vcards = vCard::fromByteArray(vcards.toUtf8());
 
     for (auto vcard : history_vcards) {
