@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
+#include <QtQml/QQmlListProperty>
 
 #include "messageengine.h"
 
@@ -63,23 +64,34 @@ class Contact : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
-    Q_PROPERTY(QList<QObject *>numbers READ numbers NOTIFY numbersChanged)
+    Q_PROPERTY(QQmlListProperty<PhoneNumber>numbers READ numbersList NOTIFY numbersListChanged)
 
     public:
-        explicit Contact(QString name, QList<QObject *>numbers);
+        explicit Contact(QString name, QList<PhoneNumber *>numbers);
         virtual ~Contact();
 
         bool operator<(Contact& c) {return ((this->m_name < c.m_name));};
         QString name() {return m_name;};
-        QList<QObject *>numbers() {return m_numbers;};
+        QList<PhoneNumber *>numbers() {return m_numbers;};
+        QQmlListProperty<PhoneNumber>numbersList() {
+            return QQmlListProperty<PhoneNumber>(this, 0, &Contact::countNumbers, &Contact::atNumbers);
+        }
+        static int countNumbers(QQmlListProperty<PhoneNumber> *property) {
+            Contact *contact = qobject_cast<Contact *>(property->object);
+            return contact->m_numbers.size();
+        }
+        static PhoneNumber *atNumbers(QQmlListProperty<PhoneNumber> *property, int index) {
+            Contact *contact = qobject_cast<Contact *>(property->object);
+            return contact->m_numbers[index];
+        }
 
     signals:
         void nameChanged();
-        void numbersChanged();
+        void numbersListChanged();
 
     private:
         QString m_name;
-        QList<QObject *>m_numbers;
+        QList<PhoneNumber *>m_numbers;
 };
 
 class RecentCall : public QObject

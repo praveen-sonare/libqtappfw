@@ -45,7 +45,7 @@ int PhoneNumber::stringToEnum(QString key)
     return (value < 0) ? 0 : value;
 }
 
-Contact::Contact(QString name, QList<QObject *>numbers)
+Contact::Contact(QString name, QList<PhoneNumber *>numbers)
 {
     m_name = name;
     m_numbers = numbers;
@@ -83,6 +83,8 @@ Pbap::Pbap (QUrl &url, QQmlContext *context, QObject * parent) :
 {
     m_mloop = new MessageEngine(url);
     m_context = context;
+    m_context->setContextProperty("ContactsModel", QVariant::fromValue(m_contacts));
+    qmlRegisterUncreatableType<PhoneNumber>("PhoneNumber", 1, 0, "PhoneNumber", "Enum");
     m_context->setContextProperty("RecentCallModel", QVariant::fromValue(m_calls));
     qmlRegisterUncreatableType<RecentCall>("RecentCall", 1, 0, "RecentCall", "Enum");
 
@@ -149,6 +151,8 @@ void Pbap::updateContacts(QString vcards)
 {
     QString name, number, type;
 
+    m_contacts.clear();
+
     QList<vCard> contacts_vcards = vCard::fromByteArray(vcards.toUtf8());
 
     for (auto vcard : contacts_vcards) {
@@ -162,7 +166,7 @@ void Pbap::updateContacts(QString vcards)
          * properties, so we iterate over all properties and parse
          * each identified VC_TELEPHONE property in the vCard.
          */
-        QList<QObject *> numbers;
+        QList<PhoneNumber *> numbers;
         vCardPropertyList properties = vcard.properties();
         for (auto property : properties) {
             if (property.isValid() && (property.name() == VC_TELEPHONE)) {
@@ -178,6 +182,9 @@ void Pbap::updateContacts(QString vcards)
     }
 
     std::sort(m_contacts.begin(), m_contacts.end(), compareContactPtr);
+
+    // Refresh model
+    m_context->setContextProperty("ContactsModel", QVariant::fromValue(m_contacts));
 
     refreshCalls(100);
 }
@@ -206,9 +213,8 @@ void Pbap::updateCalls(QString vcards)
             bool found = false;
             for (auto contact_obj : m_contacts) {
                 Contact *contact = qobject_cast<Contact *>(contact_obj);
-                QList<QObject *>numbers = contact->numbers();
-                for (auto number_obj : numbers) {
-                    PhoneNumber *phone_number = qobject_cast<PhoneNumber *>(number_obj);
+                QList<PhoneNumber *> numbers = contact->numbers();
+                for (auto phone_number : numbers) {
                     if (number.endsWith(phone_number->number())) {
                         name = contact->name();
                         found = true;
