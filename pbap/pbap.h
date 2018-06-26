@@ -69,6 +69,7 @@ class Contact : public QObject
         explicit Contact(QString name, QList<QObject *>numbers);
         virtual ~Contact();
 
+        bool operator<(Contact& c) {return ((this->m_name < c.m_name));};
         QString name() {return m_name;};
         QList<QObject *>numbers() {return m_numbers;};
 

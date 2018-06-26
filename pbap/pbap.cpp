@@ -137,6 +137,14 @@ void Pbap::search(QString number)
     tmsg->deleteLater();
 }
 
+bool compareContactPtr(QObject *a, QObject *b)
+{
+    Contact *contactA = qobject_cast<Contact *>(a);
+    Contact *contactB = qobject_cast<Contact *>(b);
+
+    return (*contactA < *contactB);
+}
+
 void Pbap::updateContacts(QString vcards)
 {
     QString name, number, type;
@@ -147,6 +155,8 @@ void Pbap::updateContacts(QString vcards)
         vCardProperty name_prop = vcard.property(VC_FORMATTED_NAME);
         QStringList values = name_prop.values();
         name = values.at(vCardProperty::DefaultValue);
+        if (name.isEmpty() || name.startsWith('#'))
+            continue;
         /*
          * libvcard has no member function to return a list of named
          * properties, so we iterate over all properties and parse
@@ -166,6 +176,9 @@ void Pbap::updateContacts(QString vcards)
         }
         m_contacts.append(new Contact(name, numbers));
     }
+
+    std::sort(m_contacts.begin(), m_contacts.end(), compareContactPtr);
+
     refreshCalls(100);
 }
 
