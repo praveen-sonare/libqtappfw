@@ -19,11 +19,26 @@
 #include "mediaplayer.h"
 #include "mediaplayermessage.h"
 
-Mediaplayer::Mediaplayer (QUrl &url, QObject * parent) :
+Playlist::Playlist(QVariantMap &item)
+{
+    m_index = item["index"].toInt();
+    m_duration = item["duration"].toInt();
+    m_genre = item["genre"].toString();
+    m_path = item["path"].toString();
+    m_title = item["title"].toString();
+    m_album = item["album"].toString();
+    m_artist = item["artist"].toString();
+}
+
+Playlist::~Playlist() {}
+
+Mediaplayer::Mediaplayer (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
     m_mloop(nullptr)
 {
     m_mloop = new MessageEngine(url);
+    m_context = context;
+    m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Mediaplayer::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Mediaplayer::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Mediaplayer::onMessageReceived);
@@ -34,6 +49,22 @@ Mediaplayer::~Mediaplayer()
     delete m_mloop;
 }
 
+// Qt UI Context
+
+void Mediaplayer::updatePlaylist(QVariantMap playlist)
+{
+    QVariantList list = playlist["list"].toList();
+
+    m_playlist.clear();
+
+    for (auto i : list) {
+        QVariantMap item = qvariant_cast<QVariantMap>(i);
+        m_playlist.append(new Playlist(item));
+    }
+
+    // Refresh model
+    m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
+}
 
 // Control Verb methods
 
@@ -161,7 +192,7 @@ void Mediaplayer::onMessageReceived(MessageType type, Message *message)
 
         if (tmsg->isEvent()) {
             if (tmsg->isPlaylistEvent()) {
-                emit playlistChanged(tmsg->eventData().toVariantMap());
+                updatePlaylist(tmsg->eventData().toVariantMap());
             } else if (tmsg->isMetadataEvent()) {
                 emit metadataChanged(tmsg->eventData().toVariantMap());
             }

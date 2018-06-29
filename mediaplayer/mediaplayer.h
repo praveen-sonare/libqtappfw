@@ -20,14 +20,59 @@
 #include <QDebug>
 #include <QObject>
 
+#include <QtQml/QQmlContext>
+#include <QtQml/QQmlListProperty>
 #include "messageengine.h"
+
+class Playlist : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(int index READ index NOTIFY indexChanged)
+    Q_PROPERTY(int duration READ duration NOTIFY durationChanged)
+    Q_PROPERTY(QString path READ path NOTIFY pathChanged)
+
+    // METADATA FIELDS
+    Q_PROPERTY(QString title READ title NOTIFY titleChanged)
+    Q_PROPERTY(QString album READ album NOTIFY albumChanged)
+    Q_PROPERTY(QString artist READ artist NOTIFY artistChanged)
+    Q_PROPERTY(QString genre READ genre NOTIFY genreChanged)
+
+    public:
+        explicit Playlist(QVariantMap& item);
+        virtual ~Playlist();
+
+        bool operator<(Playlist& c) { return ((this->m_index < c.m_index)); };
+        int index() { return m_index; };
+        int duration() { return m_duration; };
+        QString path() { return m_path; };
+
+        // METADATA FIELDS
+        QString title() { return m_title; };
+        QString album() { return m_album; };
+        QString artist() { return m_artist; };
+        QString genre() { return m_genre; };
+
+    signals:
+        void indexChanged();
+        void durationChanged();
+        void pathChanged();
+        void titleChanged();
+        void albumChanged();
+        void artistChanged();
+        void genreChanged();
+
+    private:
+        int m_index, m_duration;
+        QString m_path, m_title, m_album, m_artist, m_genre;
+};
 
 class Mediaplayer : public QObject
 {
     Q_OBJECT
 
     public:
-        explicit Mediaplayer(QUrl &url, QObject * parent = Q_NULLPTR);
+        explicit Mediaplayer(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Mediaplayer();
 
         // controls
@@ -42,12 +87,15 @@ class Mediaplayer : public QObject
         Q_INVOKABLE void volume(int);
         Q_INVOKABLE void loop(int);
 
+        void updatePlaylist(QVariantMap playlist);
+
     signals:
-        void playlistChanged(QVariantMap playlist);
         void metadataChanged(QVariantMap metadata);
 
     private:
         MessageEngine *m_mloop;
+        QQmlContext *m_context;
+        QList<QObject *> m_playlist;
 
         void control(QString, QJsonObject);
         void control(QString);
