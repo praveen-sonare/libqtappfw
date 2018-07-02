@@ -36,6 +36,7 @@ enum MessageType {
 	TelephonyEventMessage,
 	WeatherEventMessage,
 	MediaplayerEventMessage,
+	NetworkEventMessage,
 	BluetoothEventMessage,
 	PbapEventMessage,
 };

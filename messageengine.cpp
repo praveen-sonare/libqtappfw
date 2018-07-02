@@ -18,6 +18,7 @@
 #include "messageengine.h"
 #include "bluetoothmessage.h"
 #include "mediaplayermessage.h"
+#include "networkmessage.h"
 #include "pbapmessage.h"
 #include "responsemessage.h"
 #include "telephonymessage.h"
@@ -122,6 +123,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "mediaplayer") {
 			message = new MediaplayerMessage;
 			type = MediaplayerEventMessage;
+		} else if (api == "network-manager") {
+			message = new NetworkMessage;
+			type = NetworkEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
