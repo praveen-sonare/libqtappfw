@@ -50,7 +50,7 @@ set (SUBDIRS
 	telephony
 	weather)
 
-add_headers(message.h messageengine.h)
+add_headers(message.h messageengine.h responsemessage.h)
 add_sources(message.cpp messageengine.cpp responsemessage.cpp)
 
 foreach(subdir ${SUBDIRS})
