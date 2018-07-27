@@ -163,6 +163,9 @@ void WifiNetworkModel::updateProperties(QString service, QJsonObject properties)
         if (properties.contains("strength")) {
             network->setStrength(properties.value("strength").toInt());
             emit dataChanged(indexOf(network), indexOf(network));
+        if ((network->state() == "ready") ||
+            (network->state() == "online"))
+                emit strengthChanged(network->strength());
         }
     }
 }

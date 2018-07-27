@@ -43,9 +43,11 @@ class Network : public QObject
 
         Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
         Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
+        Q_PROPERTY(bool wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
 
         bool wifiConnected() const { return m_wifiConnected; }
         bool wifiEnabled() const { return m_wifiEnabled; }
+        bool wifiStrength() const { return m_wifiStrength; }
 
     signals:
         void inputRequest(int id);
@@ -53,6 +55,7 @@ class Network : public QObject
         void statusChanged(bool connected);
         void wifiConnectedChanged(bool connected);
         void wifiEnabledChanged(bool enabled);
+        void wifiStrengthChanged(int strength);
 
     private:
         MessageEngine *m_mloop;
@@ -60,6 +63,7 @@ class Network : public QObject
         WifiNetworkModel *m_wifi;
         bool m_wifiConnected;
         bool m_wifiEnabled;
+        int m_wifiStrength;
 
         void updateWifiStatus(QJsonObject properties);
         void updateServiceProperties(QJsonObject data);
@@ -79,6 +83,7 @@ class Network : public QObject
         void onConnected();
         void onDisconnected();
         void onMessageReceived(MessageType, Message*);
+        void updateWifiStrength(int);
 
         const QStringList events {
             "agent",
