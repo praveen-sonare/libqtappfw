@@ -31,7 +31,8 @@ Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     m_mloop(nullptr),
     m_wifi(nullptr),
     m_wifiConnected(false),
-    m_wifiEnabled(false)
+    m_wifiEnabled(false),
+    m_wifiStrength(0)
 {
     m_mloop = new MessageEngine(url);
     m_wifi = new WifiNetworkModel();
@@ -41,6 +42,7 @@ Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Network::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Network::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Network::onMessageReceived);
+    QObject::connect(m_wifi, &WifiNetworkModel::strengthChanged, this, &Network::updateWifiStrength);
 }
 
 Network::~Network()
@@ -159,6 +161,9 @@ bool Network::addService(QJsonObject service)
         WifiNetwork *network = new WifiNetwork(address, security, id, ssid, state, strength);
         m_wifi->addNetwork(network);
 
+        if ((state == "ready") || (state == "online"))
+            updateWifiStrength(strength);
+
         return true;
 }
 
@@ -200,6 +205,12 @@ void Network::updateWifiStatus(QJsonObject properties)
         if (m_wifiEnabled)
             getServices();
     }
+}
+
+void Network::updateWifiStrength(int strength)
+{
+    m_wifiStrength = strength;
+    emit wifiStrengthChanged(m_wifiStrength);
 }
 
 void Network::parseTechnologies(QJsonArray technologies)

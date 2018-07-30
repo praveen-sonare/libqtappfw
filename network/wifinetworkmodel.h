@@ -58,6 +58,9 @@ class WifiNetworkModel : public QAbstractListModel
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
         void updateProperties(QString service, QJsonObject properties);
 
+    signals:
+        void strengthChanged(int strength);
+
     protected:
         QHash<int, QByteArray> roleNames() const;
 
