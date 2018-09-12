@@ -76,7 +76,7 @@ void Mediaplayer::control(QString control, QJsonObject parameter)
 
     tmsg->createRequest("controls", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 
@@ -166,7 +166,7 @@ void Mediaplayer::onConnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("subscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 }
 
@@ -181,7 +181,7 @@ void Mediaplayer::onDisconnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("unsubscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 }
 

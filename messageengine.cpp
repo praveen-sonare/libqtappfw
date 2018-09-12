@@ -75,7 +75,6 @@ void MessageEngine::onConnected()
 void MessageEngine::onDisconnected()
 {
 	disconnect(&m_websocket, &QWebSocket::textMessageReceived, this, &MessageEngine::onTextMessageReceived);
-	m_websocket.deleteLater();
 	emit disconnected();
 }
 

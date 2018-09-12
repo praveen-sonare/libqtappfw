@@ -39,7 +39,7 @@ void Weather::onConnected()
 	WeatherMessage *tmsg = new WeatherMessage();
 	tmsg->createRequest("subscribe", "weather");
 	m_mloop->sendMessage(tmsg);
-	tmsg->deleteLater();
+	delete tmsg;
 }
 
 void Weather::onDisconnected()
@@ -47,7 +47,7 @@ void Weather::onDisconnected()
 	WeatherMessage *tmsg = new WeatherMessage();
 	tmsg->createRequest("unsubscribe", "weather");
 	m_mloop->sendMessage(tmsg);
-	tmsg->deleteLater();
+	delete tmsg;
 }
 
 void Weather::onMessageReceived(MessageType type, Message *message)

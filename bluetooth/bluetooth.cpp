@@ -48,7 +48,7 @@ void Bluetooth::generic_command(QString verb, QString value)
 
     tmsg->createRequest(verb, parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Bluetooth::setPower(bool state)
@@ -74,7 +74,7 @@ void Bluetooth::setDiscoverable(bool state)
 
         tmsg->createRequest("set_property", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 
     m_discoverable = state;
@@ -119,7 +119,7 @@ void Bluetooth::connect(QString address, QString uuid)
     parameter.insert("uuid", uuid);
     tmsg->createRequest("connect", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Bluetooth::connect(QString address)
@@ -138,7 +138,7 @@ void Bluetooth::disconnect(QString address, QString uuid)
     parameter.insert("uuid", uuid);
     tmsg->createRequest("disconnect", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Bluetooth::disconnect(QString address)
@@ -160,7 +160,7 @@ void Bluetooth::set_avrcp_controls(QString address, QString cmd)
     parameter.insert("value", cmd);
     tmsg->createRequest("set_avrcp_controls", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Bluetooth::onConnected()
@@ -174,7 +174,7 @@ void Bluetooth::onConnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("subscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 
     // get initial power state
@@ -195,7 +195,7 @@ void Bluetooth::onDisconnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("unsubscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 }
 

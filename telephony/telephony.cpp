@@ -41,7 +41,7 @@ void Telephony::dial(QString number)
 	TelephonyMessage *tmsg = new TelephonyMessage();
 	tmsg->createRequest("dial", number);
 	m_mloop->sendMessage(tmsg);
-	tmsg->deleteLater();
+	delete tmsg;
 }
 
 void Telephony::answer()
@@ -49,7 +49,7 @@ void Telephony::answer()
 	TelephonyMessage *tmsg = new TelephonyMessage();
 	tmsg->createRequest("answer");
 	m_mloop->sendMessage(tmsg);
-	tmsg->deleteLater();
+	delete tmsg;
 }
 
 void Telephony::hangup()
@@ -57,7 +57,7 @@ void Telephony::hangup()
 	TelephonyMessage *tmsg = new TelephonyMessage();
 	tmsg->createRequest("hangup");
 	m_mloop->sendMessage(tmsg);
-	tmsg->deleteLater();
+	delete tmsg;
 }
 
 void Telephony::onConnected()
@@ -74,7 +74,7 @@ void Telephony::onConnected()
 		tmsg = new TelephonyMessage();
 		tmsg->createRequest("subscribe", eventIterator.next());
 		m_mloop->sendMessage(tmsg);
-		tmsg->deleteLater();
+        delete tmsg;
 	}
 
 	setConnected(true);

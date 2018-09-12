@@ -60,7 +60,7 @@ void Network::connect(QString service)
 
     nmsg->createRequest("connect_service", parameter);
     m_mloop->sendMessage(nmsg);
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::disconnect(QString service)
@@ -72,7 +72,7 @@ void Network::disconnect(QString service)
 
     nmsg->createRequest("disconnect_service", parameter);
     m_mloop->sendMessage(nmsg);
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::input(int id, QString passphrase)
@@ -86,7 +86,7 @@ void Network::input(int id, QString passphrase)
 
     nmsg->createRequest("agent_response", parameter);
     m_mloop->sendMessage(nmsg);
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::power(bool on)
@@ -106,7 +106,7 @@ void Network::enableTechnology(QString type)
     nmsg->createRequest("enable_technology", parameter);
     m_mloop->sendMessage(nmsg);
 
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::disableTechnology(QString type)
@@ -118,7 +118,7 @@ void Network::disableTechnology(QString type)
     nmsg->createRequest("disable_technology", parameter);
     m_mloop->sendMessage(nmsg);
 
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::scanServices(QString type)
@@ -130,7 +130,7 @@ void Network::scanServices(QString type)
     nmsg->createRequest("scan_services", parameter);
     m_mloop->sendMessage(nmsg);
 
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 bool Network::addService(QJsonObject service)
@@ -189,7 +189,7 @@ void Network::getServices()
 
     nmsg->createRequest("services", parameter);
     m_mloop->sendMessage(nmsg);
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::updateWifiStatus(QJsonObject properties)
@@ -235,7 +235,7 @@ void Network::getTechnologies()
 
     nmsg->createRequest("technologies", parameter);
     m_mloop->sendMessage(nmsg);
-    nmsg->deleteLater();
+    delete nmsg;
 }
 
 void Network::updateServiceProperties(QJsonObject data)
@@ -311,7 +311,7 @@ void Network::onConnected()
         parameter.insert("value", eventIterator.next());
         nmsg->createRequest("subscribe", parameter);
         m_mloop->sendMessage(nmsg);
-        nmsg->deleteLater();
+        delete nmsg;
     }
 
     getTechnologies();
@@ -328,7 +328,7 @@ void Network::onDisconnected()
         parameter.insert("value", eventIterator.next());
         nmsg->createRequest("unsubscribe", parameter);
         m_mloop->sendMessage(nmsg);
-        nmsg->deleteLater();
+        delete nmsg;
     }
 
     m_wifi->removeAllNetworks();
