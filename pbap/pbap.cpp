@@ -108,7 +108,7 @@ void Pbap::refreshContacts(int max_entries)
 
     tmsg->createRequest("contacts", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Pbap::refreshCalls(int max_entries)
@@ -122,7 +122,7 @@ void Pbap::refreshCalls(int max_entries)
 
     tmsg->createRequest("history", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 void Pbap::search(QString number)
@@ -136,7 +136,7 @@ void Pbap::search(QString number)
 
     tmsg->createRequest("search", parameter);
     m_mloop->sendMessage(tmsg);
-    tmsg->deleteLater();
+    delete tmsg;
 }
 
 bool compareContactPtr(QObject *a, QObject *b)
@@ -269,7 +269,7 @@ void Pbap::onConnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("subscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 }
 
@@ -284,7 +284,7 @@ void Pbap::onDisconnected()
         parameter.insert("value", eventIterator.next());
         tmsg->createRequest("unsubscribe", parameter);
         m_mloop->sendMessage(tmsg);
-        tmsg->deleteLater();
+        delete tmsg;
     }
 }
 
