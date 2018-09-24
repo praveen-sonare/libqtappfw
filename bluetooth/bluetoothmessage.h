@@ -36,7 +36,7 @@ class BluetoothMessage : public Message
             "remove_device",       "pair",              "cancel_pair",
             "connect",             "disconnect",        "device_priorites",
             "set_device_property", "set_property",      "discovery_result",
-            "set_avrcp_controls",  "send_confirmation",
+            "set_avrcp_controls",  "send_confirmation", "version",
             "subscribe",           "unsubscribe",
         };
 };
