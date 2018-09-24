@@ -34,7 +34,7 @@ class BluetoothMessage : public Message
         QStringList verbs {
             "start_discovery" ,    "stop_discovery",    "power",
             "remove_device",       "pair",              "cancel_pair",
-            "connect",             "disconnect",        "device_priorites",
+            "connect",             "disconnect",        "device_priorities",
             "set_device_property", "set_property",      "discovery_result",
             "set_avrcp_controls",  "send_confirmation", "version",
             "subscribe",           "unsubscribe",
