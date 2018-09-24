@@ -23,6 +23,9 @@ class BluetoothMessage : public Message
 {
     Q_OBJECT
     public:
+        explicit BluetoothMessage(QString api_version = "1.0", QObject *parent = 0) { m_api_version = api_version; };
+
+        // Bluetooth API Schema 1.0
         bool isConnectionEvent() { return (this->eventName() == "connection"); };
         bool isRequestConfirmationEvent() { return (this->eventName() == "request_confirmation"); };
         bool isDeviceAddedEvent() { return (this->eventName() == "device_added"); };
@@ -31,7 +34,7 @@ class BluetoothMessage : public Message
         bool createRequest(QString verb, QJsonObject parameter);
 
     private:
-        QStringList verbs {
+        QStringList verbs_v1 {
             "start_discovery" ,    "stop_discovery",    "power",
             "remove_device",       "pair",              "cancel_pair",
             "connect",             "disconnect",        "device_priorities",
@@ -39,6 +42,8 @@ class BluetoothMessage : public Message
             "set_avrcp_controls",  "send_confirmation", "version",
             "subscribe",           "unsubscribe",
         };
+
+        QString m_api_version;
 };
 
 #endif // BLUETOOTH_MESSAGE_H

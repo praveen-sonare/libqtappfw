@@ -23,8 +23,11 @@
 
 bool BluetoothMessage::createRequest(QString verb, QJsonObject parameter)
 {
-	if (!verbs.contains(verb))
-		return false;
+    if (m_api_version != "1.0")
+        return false;
 
-	return Message::createRequest("Bluetooth-Manager", verb, parameter);
+    if (!verbs_v1.contains(verb))
+        return false;
+
+    return Message::createRequest("Bluetooth-Manager", verb, parameter);
 }
