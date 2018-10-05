@@ -31,6 +31,11 @@ class BluetoothMessage : public Message
         bool isDeviceAddedEvent() { return (this->eventName() == "device_added"); };
         bool isDeviceRemovedEvent() { return (this->eventName() == "device_removed"); };
         bool isDeviceUpdatedEvent() { return (this->eventName() == "device_updated"); };
+
+        // Bluetooth API Schema 2.0
+        bool isDeviceChangesEvent() { return (this->eventName() == "device_changes"); };
+        bool isAgentEvent() { return (this->eventName() == "agent"); };
+
         bool createRequest(QString verb, QJsonObject parameter);
 
     private:
@@ -40,6 +45,13 @@ class BluetoothMessage : public Message
             "connect",             "disconnect",        "device_priorities",
             "set_device_property", "set_property",      "discovery_result",
             "set_avrcp_controls",  "send_confirmation", "version",
+            "subscribe",           "unsubscribe",
+        };
+
+        QStringList verbs_v2 {
+            "connect",             "disconnect",        "managed_objects",
+            "adapter_state",       "pair",              "cancel_pairing",
+            "confirm_pairing",     "remove_device",     "version",
             "subscribe",           "unsubscribe",
         };
 
