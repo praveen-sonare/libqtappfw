@@ -31,6 +31,7 @@ Bluetooth::Bluetooth (QUrl &url, QObject * parent) :
 
     uuids.insert("a2dp", "0000110a-0000-1000-8000-00805f9b34fb");
     uuids.insert("avrcp", "0000110e-0000-1000-8000-00805f9b34fb");
+    uuids.insert("hfp", "0000111f-0000-1000-8000-00805f9b34fb");
 }
 
 Bluetooth::~Bluetooth()
@@ -38,14 +39,9 @@ Bluetooth::~Bluetooth()
     delete m_mloop;
 }
 
-void Bluetooth::generic_command(QString verb, QString value)
+void Bluetooth::send_command(QString verb, QJsonObject parameter)
 {
     BluetoothMessage *tmsg = new BluetoothMessage();
-    QJsonObject parameter;
-
-    if (!value.isEmpty())
-        parameter.insert("value", value);
-
     tmsg->createRequest(verb, parameter);
     m_mloop->sendMessage(tmsg);
     delete tmsg;
@@ -53,138 +49,158 @@ void Bluetooth::generic_command(QString verb, QString value)
 
 void Bluetooth::setPower(bool state)
 {
-    generic_command("power", state ? "true": "false");
-
-    m_power = state;
-
-    emit powerChanged(m_power);
+    QJsonObject parameter;
+    parameter.insert("powered", state ? "true" : "false");
+    send_command("adapter_state", parameter);
 }
 
 void Bluetooth::setDiscoverable(bool state)
 {
-    const QStringList properties { "Pairable", "Discoverable" };
-    QStringListIterator propertyIterator(properties);
-
-    while (propertyIterator.hasNext()) {
-        BluetoothMessage *tmsg = new BluetoothMessage();
-        QJsonObject parameter;
-
-        parameter.insert("Property", propertyIterator.next());
-        parameter.insert("value", state ? "true" : "false");
-
-        tmsg->createRequest("set_property", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
-    }
+    QJsonObject parameter;
+    parameter.insert("discoverable", state ? "true" : "false");
+    send_command("adapter_state", parameter);
 
     m_discoverable = state;
 
     emit discoverableChanged();
 }
 
+void Bluetooth::discovery_command(bool state)
+{
+    QJsonObject parameter;
+    parameter.insert("discovery", state ? "true" : "false");
+
+    set_discovery_filter();
+
+    send_command("adapter_state", parameter);
+}
+
 void Bluetooth::start_discovery()
 {
-    generic_command("start_discovery", "");
-    generic_command("discovery_result", "");
+    discovery_command(true);
+
+    // temp workaround to list already discovered devices
+    send_command("managed_objects", QJsonObject());
 }
 
 void Bluetooth::stop_discovery()
 {
-    generic_command("stop_discovery", "");
+    discovery_command(false);
 }
 
-void Bluetooth::remove_device(QString address)
+void Bluetooth::remove_device(QString device)
 {
-    generic_command("remove_device", address);
-}
-
-void Bluetooth::pair(QString address)
-{
-    generic_command("pair", address);
-}
-
-void Bluetooth::cancel_pair(QString address)
-{
-    generic_command("cancel_pair", address);
-}
-
-void Bluetooth::connect(QString address, QString uuid)
-{
-    BluetoothMessage *tmsg = new BluetoothMessage();
     QJsonObject parameter;
+    parameter.insert("device", device);
 
-    uuid = process_uuid(uuid);
-
-    parameter.insert("value", address);
-    parameter.insert("uuid", uuid);
-    tmsg->createRequest("connect", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    send_command("remove_device", parameter);
 }
 
-void Bluetooth::connect(QString address)
+void Bluetooth::pair(QString device)
 {
-    generic_command("connect", address);
-}
-
-void Bluetooth::disconnect(QString address, QString uuid)
-{
-    BluetoothMessage *tmsg = new BluetoothMessage();
     QJsonObject parameter;
+    parameter.insert("device", device);
 
+    send_command("pair", parameter);
+}
+
+void Bluetooth::cancel_pair(QString device)
+{
+    send_command("cancel_pairing", QJsonObject());
+}
+
+void Bluetooth::connect(QString device, QString uuid)
+{
+    QJsonObject parameter;
     uuid = process_uuid(uuid);
-
-    parameter.insert("value", address);
+    parameter.insert("device", device);
     parameter.insert("uuid", uuid);
-    tmsg->createRequest("disconnect", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    send_command("connect", parameter);
 }
 
-void Bluetooth::disconnect(QString address)
+void Bluetooth::connect(QString device)
 {
-    generic_command("disconnect", address);
+    QJsonObject parameter;
+    parameter.insert("device", device);
+    send_command("connect", parameter);
 }
 
-void Bluetooth::send_confirmation()
+void Bluetooth::disconnect(QString device, QString uuid)
 {
-    generic_command("send_confirmation", "yes");
+    QJsonObject parameter;
+    uuid = process_uuid(uuid);
+    parameter.insert("device", device);
+    parameter.insert("uuid", uuid);
+    send_command("disconnect", parameter);
+}
+
+void Bluetooth::disconnect(QString device)
+{
+    QJsonObject parameter;
+    parameter.insert("device", device);
+    send_command("disconnect", parameter);
+}
+
+void Bluetooth::send_confirmation(int pincode)
+{
+    QJsonObject parameter;
+    parameter.insert("pincode", pincode);
+    send_command("confirm_pairing", parameter);
+}
+
+
+void Bluetooth::set_discovery_filter()
+{
+    QStringListIterator eventIterator(uuids.values());
+    QJsonObject parameter;
+    QJsonArray array;
+
+    while (eventIterator.hasNext())
+        array.push_back(eventIterator.next());
+
+    // send inital adapter state + discovery filter
+    parameter.insert("filter", array);
+    send_command("adapter_state", parameter);
 }
 
 void Bluetooth::onConnected()
 {
     QStringListIterator eventIterator(events);
-    BluetoothMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new BluetoothMessage();
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        send_command("subscribe", parameter);
     }
 
-    // get initial power state
-    generic_command("power", QString());
-
     // send initial list
-    generic_command("discovery_result", "");
+    send_command("managed_objects", QJsonObject());
+
+    // get initial power state
+    send_command("adapter_state", QJsonObject());
 }
 
 void Bluetooth::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    BluetoothMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new BluetoothMessage();
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        send_command("unsubscribe", parameter);
     }
+}
+
+void Bluetooth::processDeviceChangesEvent(QJsonObject data)
+{
+    QString action = data.value("action").toString();
+
+    if (action == "added")
+        emit deviceAddedEvent(data);
+    else if (action == "changed")
+        emit deviceUpdatedEvent(data);
+    else if (action == "removed")
+        emit deviceRemovedEvent(data);
 }
 
 void Bluetooth::onMessageReceived(MessageType type, Message *msg)
@@ -192,24 +208,19 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
     if (msg->isEvent() && type == BluetoothEventMessage) {
         BluetoothMessage *tmsg = qobject_cast<BluetoothMessage*>(msg);
 
-        if (tmsg->isConnectionEvent()) {
-            emit connectionEvent(tmsg->eventData());
-        } else if (tmsg->isRequestConfirmationEvent()) {
+        if (tmsg->isDeviceChangesEvent()) {
+            processDeviceChangesEvent(tmsg->eventData());
+        } else if (tmsg->isAgentEvent()) {
             emit requestConfirmationEvent(tmsg->eventData());
-        } else if (tmsg->isDeviceAddedEvent()) {
-            emit deviceAddedEvent(tmsg->eventData());
-        } else if (tmsg->isDeviceRemovedEvent()) {
-            emit deviceRemovedEvent(tmsg->eventData());
-        } else if (tmsg->isDeviceUpdatedEvent()) {
-            emit deviceUpdatedEvent(tmsg->eventData());
         }
+
     } else if (msg->isReply() && type == ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
-        if (tmsg->requestVerb() == "discovery_result") {
+        if (tmsg->requestVerb() == "managed_objects") {
             emit deviceListEvent(tmsg->replyData());
-        } else if (tmsg->requestVerb() == "power") {
-            m_power = tmsg->replyData().value("power").toString() == "on";
+        } else if (tmsg->requestVerb() == "adapter_state") {
+            m_power = tmsg->replyData().value("powered").toBool();
             emit powerChanged(m_power);
         }
     }

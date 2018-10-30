@@ -23,20 +23,15 @@ class BluetoothMessage : public Message
 {
     Q_OBJECT
     public:
-        bool isConnectionEvent() { return (this->eventName() == "connection"); };
-        bool isRequestConfirmationEvent() { return (this->eventName() == "request_confirmation"); };
-        bool isDeviceAddedEvent() { return (this->eventName() == "device_added"); };
-        bool isDeviceRemovedEvent() { return (this->eventName() == "device_removed"); };
-        bool isDeviceUpdatedEvent() { return (this->eventName() == "device_updated"); };
+        bool isDeviceChangesEvent() { return (this->eventName() == "device_changes"); };
+        bool isAgentEvent() { return (this->eventName() == "agent"); };
         bool createRequest(QString verb, QJsonObject parameter);
 
     private:
         QStringList verbs {
-            "start_discovery" ,    "stop_discovery",    "power",
-            "remove_device",       "pair",              "cancel_pair",
-            "connect",             "disconnect",        "device_priorities",
-            "set_device_property", "set_property",      "discovery_result",
-            "set_avrcp_controls",  "send_confirmation", "version",
+            "connect",             "disconnect",        "managed_objects",
+            "adapter_state",       "pair",              "cancel_pairing",
+            "confirm_pairing",     "remove_device",     "version",
             "subscribe",           "unsubscribe",
         };
 };
