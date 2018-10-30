@@ -49,7 +49,6 @@ class Bluetooth : public QObject
         Q_INVOKABLE void disconnect(QString address);
 
         Q_INVOKABLE void send_confirmation(void);
-        Q_INVOKABLE void set_avrcp_controls(QString address, QString cmd);
 
         bool power() const { return m_power; };
         bool discoverable() const { return m_discoverable; };

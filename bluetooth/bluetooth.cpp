@@ -151,18 +151,6 @@ void Bluetooth::send_confirmation()
     generic_command("send_confirmation", "yes");
 }
 
-void Bluetooth::set_avrcp_controls(QString address, QString cmd)
-{
-    BluetoothMessage *tmsg = new BluetoothMessage();
-    QJsonObject parameter;
-
-    parameter.insert("Address", address);
-    parameter.insert("value", cmd);
-    tmsg->createRequest("set_avrcp_controls", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
-}
-
 void Bluetooth::onConnected()
 {
     QStringListIterator eventIterator(events);
