@@ -103,11 +103,11 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	}
 	case Event: {
 		QStringList api_str_list = msg[1].toString().split(QRegExp("/"));
-		QString api = api_str_list[0];
+		QString api = api_str_list[0].toLower();
 
 		// FIXME: This should be rewritten using a factory class with a
 		// parser parameter to remove API specific handling here
-		if (api == "Bluetooth-Manager") {
+		if (api == "bluetooth-manager") {
 			message = new BluetoothMessage;
 			type = BluetoothEventMessage;
 		} else if (api == "bluetooth-pbap") {
