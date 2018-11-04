@@ -197,9 +197,16 @@ void Bluetooth::processDeviceChangesEvent(QJsonObject data)
 
     if (action == "added")
         emit deviceAddedEvent(data);
-    else if (action == "changed")
-        emit deviceUpdatedEvent(data);
-    else if (action == "removed")
+    else if (action == "changed") {
+        auto powered = data.find("powered").value();
+
+        if (powered.isBool()) {
+            m_power = powered.toBool();
+            emit powerChanged(m_power);
+        } else {
+            emit deviceUpdatedEvent(data);
+        }
+    } else if (action == "removed")
         emit deviceRemovedEvent(data);
 }
 
