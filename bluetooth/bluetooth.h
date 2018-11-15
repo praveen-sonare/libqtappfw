@@ -19,6 +19,7 @@
 
 #include <QDebug>
 #include <QObject>
+#include <QJsonArray>
 
 #include "messageengine.h"
 
@@ -38,18 +39,17 @@ class Bluetooth : public QObject
         Q_INVOKABLE void start_discovery(void);
         Q_INVOKABLE void stop_discovery(void);
 
-        Q_INVOKABLE void remove_device(QString address);
-        Q_INVOKABLE void pair(QString address);
-        Q_INVOKABLE void cancel_pair(QString address);
+        Q_INVOKABLE void remove_device(QString device);
+        Q_INVOKABLE void pair(QString device);
+        Q_INVOKABLE void cancel_pair(QString device);
 
-        Q_INVOKABLE void connect(QString address, QString uuid);
-        Q_INVOKABLE void connect(QString address);
+        Q_INVOKABLE void connect(QString device, QString uuid);
+        Q_INVOKABLE void connect(QString device);
 
-        Q_INVOKABLE void disconnect(QString address, QString uuid);
-        Q_INVOKABLE void disconnect(QString address);
+        Q_INVOKABLE void disconnect(QString device, QString uuid);
+        Q_INVOKABLE void disconnect(QString device);
 
-        Q_INVOKABLE void send_confirmation(void);
-        Q_INVOKABLE void set_avrcp_controls(QString address, QString cmd);
+        Q_INVOKABLE void send_confirmation(int pincode);
 
         bool power() const { return m_power; };
         bool discoverable() const { return m_discoverable; };
@@ -67,7 +67,10 @@ class Bluetooth : public QObject
 
     private:
         MessageEngine *m_mloop;
-        void generic_command(QString, QString);
+        void send_command(QString, QJsonObject);
+        void set_discovery_filter();
+        void discovery_command(bool);
+        void processDeviceChangesEvent(QJsonObject data);
 
         // slots
         void onConnected();
@@ -83,11 +86,8 @@ class Bluetooth : public QObject
         QMap<QString, QString> uuids;
 
         const QStringList events {
-            "connection",
-            "request_confirmation",
-            "device_added",
-            "device_removed",
-            "device_updated",
+            "device_changes",
+            "agent",
         };
 };
 
