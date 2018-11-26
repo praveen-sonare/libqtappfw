@@ -76,6 +76,8 @@ class Mediaplayer : public QObject
         virtual ~Mediaplayer();
 
         // controls
+        Q_INVOKABLE void disconnect();
+        Q_INVOKABLE void connect();
         Q_INVOKABLE void play();
         Q_INVOKABLE void pause();
         Q_INVOKABLE void previous();

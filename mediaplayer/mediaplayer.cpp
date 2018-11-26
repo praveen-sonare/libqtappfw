@@ -87,6 +87,15 @@ void Mediaplayer::control(QString control)
     Mediaplayer::control(control, parameter);
 }
 
+void Mediaplayer::disconnect()
+{
+    control("disconnect");
+}
+
+void Mediaplayer::connect()
+{
+    control("connect");
+}
 void Mediaplayer::play()
 {
     control("play");
