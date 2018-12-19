@@ -203,7 +203,14 @@ void Mediaplayer::onMessageReceived(MessageType type, Message *message)
             if (tmsg->isPlaylistEvent()) {
                 updatePlaylist(tmsg->eventData().toVariantMap());
             } else if (tmsg->isMetadataEvent()) {
-                emit metadataChanged(tmsg->eventData().toVariantMap());
+                QVariantMap map = tmsg->eventData().toVariantMap();
+
+                if (map.contains("track") && map.value("track").toMap().contains("image")) {
+                    m_context->setContextProperty("AlbumArt",
+                        QVariant::fromValue(map.value("track").toMap().value("image")));
+                }
+
+                emit metadataChanged(map);
             }
         }
     }
