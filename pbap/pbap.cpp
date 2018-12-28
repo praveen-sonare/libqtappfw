@@ -15,6 +15,7 @@
  */
 
 #include <QMetaEnum>
+#include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
 #include <vcard/vcard.h>
@@ -45,9 +46,10 @@ int PhoneNumber::stringToEnum(QString key)
     return (value < 0) ? 0 : value;
 }
 
-Contact::Contact(QString name, QList<PhoneNumber *>numbers)
+Contact::Contact(QString name, QString photo, QList<PhoneNumber *>numbers)
 {
     m_name = name;
+    m_photo = photo;
     m_numbers = numbers;
 }
 
@@ -167,18 +169,36 @@ void Pbap::updateContacts(QString vcards)
          * each identified VC_TELEPHONE property in the vCard.
          */
         QList<PhoneNumber *> numbers;
+        QString photo;
         vCardPropertyList properties = vcard.properties();
         for (auto property : properties) {
-            if (property.isValid() && (property.name() == VC_TELEPHONE)) {
-                QStringList values = property.values();
+            QStringList values;
+
+            if (!property.isValid())
+                continue;
+
+            values = property.values();
+
+            if (property.name() == VC_TELEPHONE) {
                 number = values.at(0);
+                // Telephone entry can be empty
+                if (number.isEmpty())
+                    continue;
                 vCardParamList params = property.params();
-                // The first parameter is always the phone number type
-                type = params.at(0).value();
+                // The first parameter is always the phone number type, but is optional
+                if (params.length())
+                    type = params.at(0).value();
+                else
+                    type = "";
                 numbers.append(new PhoneNumber(number, type));
+            } else if (property.name() == VC_PHOTO) {
+                QMimeDatabase db;
+                QMimeType type = db.mimeTypeForData(QByteArray::fromBase64(values.at(0).toLocal8Bit()));
+                photo = "data:" + type.name() + ";base64," + values.at(0);
             }
         }
-        m_contacts.append(new Contact(name, numbers));
+        if (!numbers.isEmpty())
+            m_contacts.append(new Contact(name, photo, numbers));
     }
 
     std::sort(m_contacts.begin(), m_contacts.end(), compareContactPtr);

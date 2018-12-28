@@ -64,14 +64,16 @@ class Contact : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
+    Q_PROPERTY(QString photo READ photo NOTIFY photoChanged)
     Q_PROPERTY(QQmlListProperty<PhoneNumber>numbers READ numbersList NOTIFY numbersListChanged)
 
     public:
-        explicit Contact(QString name, QList<PhoneNumber *>numbers);
+        explicit Contact(QString name, QString photo, QList<PhoneNumber *>numbers);
         virtual ~Contact();
 
         bool operator<(Contact& c) {return ((this->m_name < c.m_name));};
         QString name() {return m_name;};
+        QString photo() {return m_photo;};
         QList<PhoneNumber *>numbers() {return m_numbers;};
         QQmlListProperty<PhoneNumber>numbersList() {
             return QQmlListProperty<PhoneNumber>(this, 0, &Contact::countNumbers, &Contact::atNumbers);
@@ -87,10 +89,12 @@ class Contact : public QObject
 
     signals:
         void nameChanged();
+        void photoChanged();
         void numbersListChanged();
 
     private:
         QString m_name;
+        QString m_photo;
         QList<PhoneNumber *>m_numbers;
 };
 
