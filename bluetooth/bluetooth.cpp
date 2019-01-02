@@ -160,6 +160,7 @@ void Bluetooth::set_discovery_filter()
 
     // send inital adapter state + discovery filter
     parameter.insert("filter", array);
+    parameter.insert("transport", "bredr");
     send_command("adapter_state", parameter);
 }
 
