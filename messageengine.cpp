@@ -20,6 +20,7 @@
 #include "mediaplayermessage.h"
 #include "networkmessage.h"
 #include "pbapmessage.h"
+#include "radiomessage.h"
 #include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
@@ -125,6 +126,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "network-manager") {
 			message = new NetworkMessage;
 			type = NetworkEventMessage;
+		} else if (api == "radio") {
+			message = new RadioMessage;
+			type = RadioEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
