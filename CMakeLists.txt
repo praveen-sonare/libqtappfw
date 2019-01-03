@@ -48,6 +48,7 @@ set (SUBDIRS
 	mediaplayer
 	network
 	pbap
+	radio
 	telephony
 	weather)
 
