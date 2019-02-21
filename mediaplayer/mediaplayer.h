@@ -87,7 +87,7 @@ class Mediaplayer : public QObject
         Q_INVOKABLE void rewind(int);
         Q_INVOKABLE void picktrack(int);
         Q_INVOKABLE void volume(int);
-        Q_INVOKABLE void loop(int);
+        Q_INVOKABLE void loop(QString);
 
         void updatePlaylist(QVariantMap playlist);
 

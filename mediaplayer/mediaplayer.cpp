@@ -156,10 +156,10 @@ void Mediaplayer::volume(int volume)
     control("volume", parameter);
 }
 
-void Mediaplayer::loop(int state)
+void Mediaplayer::loop(QString state)
 {
     QJsonObject parameter;
-    parameter.insert("state", state ? "true" : "false");
+    parameter.insert("state", state);
 
     control("loop", parameter);
 }
