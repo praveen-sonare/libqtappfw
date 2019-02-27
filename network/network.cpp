@@ -15,6 +15,7 @@
  */
 
 #include <QMetaEnum>
+#include <QSortFilterProxyModel>
 #include <QtQml/QQmlEngine>
 
 #include <vcard/vcard.h>
@@ -37,7 +38,12 @@ Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     m_mloop = new MessageEngine(url);
     m_wifi = new WifiNetworkModel();
 
-    context->setContextProperty("WifiNetworkModel", m_wifi);
+    QSortFilterProxyModel *m_model = new QSortFilterProxyModel();
+    m_model->setSourceModel(m_wifi);
+    m_model->setSortRole(WifiNetworkModel::WifiNetworkRoles::SsidRole);
+    m_model->setSortCaseSensitivity(Qt::CaseInsensitive);
+    m_model->sort(0);
+    context->setContextProperty("WifiNetworkModel", m_model);
 
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Network::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Network::onDisconnected);
