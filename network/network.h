@@ -52,6 +52,7 @@ class Network : public QObject
 
     signals:
         void inputRequest(int id);
+        void invalidPassphrase(QString service);
         void searchResults(QString name);
         void statusChanged(bool connected);
         void wifiConnectedChanged(bool connected);

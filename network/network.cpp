@@ -304,6 +304,10 @@ void Network::processReply(ResponseMessage *rmsg)
         addServices(rmsg->replyData().value("values").toArray());
     } else if (rmsg->requestVerb() == "technologies") {
         parseTechnologies(rmsg->replyData().value("values").toArray());
+    } else if (rmsg->requestVerb() == "connect_service") {
+        if (rmsg->replyStatus() == "failed" && rmsg->replyInfo().contains("invalid-key")) {
+            emit invalidPassphrase(rmsg->requestData()["parameter"].toMap()["service"].toString());
+        }
     }
 }
 
