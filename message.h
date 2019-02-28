@@ -70,6 +70,11 @@ class Message : public QObject
 			return m_event_data;
 		}
 
+		inline QString replyStatus() const
+		{
+			return m_reply_status;
+		}
+
 		inline QString replyInfo() const
 		{
 			return m_reply_info;
@@ -97,6 +102,11 @@ class Message : public QObject
 
 		inline void setCallId(qint32 callId) {
 			m_request["callid"] = callId;
+		}
+
+		inline QMap<QString, QVariant> requestData() const
+		{
+			return m_request;
 		}
 
 	protected:
