@@ -27,9 +27,11 @@ class TelephonyMessage : public Message
 		bool isDialingCall() { return m_event ? (this->eventName() == "dialingCall") : false; };
 		bool isIncomingCall() { return m_event ? (this->eventName() == "incomingCall") : false; };
 		bool isTerminatedCall() { return (this->eventName() == "terminatedCall"); };
+		bool isOnline() { return (this->eventName() == "online"); };
 		QString clip() { return m_event_data.find("clip").value().toString(); };
 		QString colp() { return m_event_data.find("colp").value().toString(); };
 		QString state() { return m_event_data.find("state").value().toString(); };
+		bool connected() { return m_event_data.find("connected").value().toBool(); };
 		bool createRequest(QString verb, QString value = "None");
 };
 

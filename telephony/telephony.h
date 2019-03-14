@@ -27,6 +27,7 @@ class Telephony : public QObject
 	Q_OBJECT
 	Q_PROPERTY(bool connected READ connected WRITE setConnected NOTIFY connectedChanged)
 	Q_PROPERTY(QString callState READ callState WRITE setCallState NOTIFY callStateChanged)
+	Q_PROPERTY(bool online READ online NOTIFY onlineChanged)
 	Q_PROPERTY(QString callClip READ callClip)
 	Q_PROPERTY(QString callColp READ callColp)
 
@@ -49,7 +50,14 @@ class Telephony : public QObject
 			emit callStateChanged(m_call_state);
 		}
 
+		void setOnlineState(bool state)
+		{
+			m_online = state;
+			emit onlineChanged(state);
+		}
+
 		bool connected() { return m_connected; }
+		bool online() { return m_online; }
 		QString callState() { return m_call_state; }
 		QString callClip() { return m_clip; }
 		QString callColp() { return m_colp; }
@@ -57,9 +65,11 @@ class Telephony : public QObject
 	signals:
 		void connectedChanged(bool);
 		void callStateChanged(QString);
+		void onlineChanged(bool connected);
 
 	private:
 		bool m_connected;
+		bool m_online;
 		MessageEngine *m_mloop;
 		QString m_call_state;
 		QString m_clip;
