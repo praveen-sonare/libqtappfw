@@ -22,6 +22,7 @@
 #include <QJsonArray>
 
 #include "messageengine.h"
+#include "bluetoothmodel.h"
 
 class Bluetooth : public QObject
 {
@@ -30,7 +31,7 @@ class Bluetooth : public QObject
     Q_PROPERTY(bool discoverable READ discoverable WRITE setDiscoverable NOTIFY discoverableChanged)
 
     public:
-        explicit Bluetooth(QUrl &url, QObject * parent = Q_NULLPTR);
+        explicit Bluetooth(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Bluetooth();
 
         void setPower(bool);
@@ -60,16 +61,15 @@ class Bluetooth : public QObject
 
         void connectionEvent(QJsonObject data);
         void requestConfirmationEvent(QJsonObject data);
-        void deviceAddedEvent(QJsonObject data);
-        void deviceRemovedEvent(QJsonObject data);
-        void deviceUpdatedEvent(QJsonObject data);
-        void deviceListEvent(QJsonObject data);
 
     private:
         MessageEngine *m_mloop;
+        QQmlContext *m_context;
+        BluetoothModel *m_bluetooth;
         void send_command(QString, QJsonObject);
         void set_discovery_filter();
         void discovery_command(bool);
+        void populateDeviceList(QJsonObject data);
         void processDeviceChangesEvent(QJsonObject data);
 
         // slots

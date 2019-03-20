@@ -20,14 +20,26 @@
 #include "bluetoothmessage.h"
 #include "responsemessage.h"
 
-Bluetooth::Bluetooth (QUrl &url, QObject * parent) :
+Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
+    m_context(context),
     m_mloop(nullptr)
 {
     m_mloop = new MessageEngine(url);
+    m_bluetooth = new BluetoothModel();
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Bluetooth::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Bluetooth::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Bluetooth::onMessageReceived);
+
+    BluetoothModelFilter *m_model = new BluetoothModelFilter();
+    m_model->setSourceModel(m_bluetooth);
+    m_model->setFilterFixedString("true");
+    context->setContextProperty("BluetoothPairedModel", m_model);
+
+    m_model = new BluetoothModelFilter();
+    m_model->setSourceModel(m_bluetooth);
+    m_model->setFilterFixedString("false");
+    context->setContextProperty("BluetoothDiscoveryModel", m_model);
 
     uuids.insert("a2dp", "0000110a-0000-1000-8000-00805f9b34fb");
     uuids.insert("avrcp", "0000110e-0000-1000-8000-00805f9b34fb");
@@ -192,23 +204,42 @@ void Bluetooth::onDisconnected()
     }
 }
 
+void Bluetooth::populateDeviceList(QJsonObject data)
+{
+    QJsonArray devices = data.value("devices").toArray();
+
+    m_bluetooth->removeAllDevices();
+
+    for (auto value : devices) {
+        BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, value.toObject());
+        m_bluetooth->addDevice(device);
+    }
+}
+
 void Bluetooth::processDeviceChangesEvent(QJsonObject data)
 {
     QString action = data.value("action").toString();
+    QString id = data.value("device").toString();
 
-    if (action == "added")
-        emit deviceAddedEvent(data);
-    else if (action == "changed") {
+    if (action == "added") {
+        BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, data);
+        m_bluetooth->addDevice(device);
+    } else if (action == "changed") {
         auto powered = data.find("powered").value();
 
         if (powered.isBool()) {
             m_power = powered.toBool();
+            if (!m_power)
+                m_bluetooth->removeAllDevices();
             emit powerChanged(m_power);
         } else {
-            emit deviceUpdatedEvent(data);
+            BluetoothDevice *device = m_bluetooth->getDevice(id);
+            m_bluetooth->updateDeviceProperties(device, data);
         }
-    } else if (action == "removed")
-        emit deviceRemovedEvent(data);
+    } else if (action == "removed") {
+        BluetoothDevice *device = m_bluetooth->getDevice(id);
+        m_bluetooth->removeDevice(device);
+    }
 }
 
 void Bluetooth::onMessageReceived(MessageType type, Message *msg)
@@ -226,7 +257,7 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (tmsg->requestVerb() == "managed_objects") {
-            emit deviceListEvent(tmsg->replyData());
+            populateDeviceList(tmsg->replyData());
         } else if (tmsg->requestVerb() == "adapter_state") {
             m_power = tmsg->replyData().value("powered").toBool();
             emit powerChanged(m_power);
