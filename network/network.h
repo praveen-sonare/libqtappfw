@@ -38,6 +38,7 @@ class Network : public QObject
 
         Q_INVOKABLE void connect(QString service);
         Q_INVOKABLE void disconnect(QString service);
+        Q_INVOKABLE void remove(QString service);
         Q_INVOKABLE void power(bool on);
         Q_INVOKABLE void input(int id, QString passphrase);
 

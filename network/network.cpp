@@ -75,6 +75,18 @@ void Network::disconnect(QString service)
     delete nmsg;
 }
 
+void Network::remove(QString service)
+{
+    NetworkMessage *nmsg = new NetworkMessage();
+    QJsonObject parameter;
+
+    parameter.insert("service", service);
+
+    nmsg->createRequest("remove_service", parameter);
+    m_mloop->sendMessage(nmsg);
+    delete nmsg;
+}
+
 void Network::input(int id, QString passphrase)
 {
     NetworkMessage *nmsg = new NetworkMessage();
