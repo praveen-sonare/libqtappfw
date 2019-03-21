@@ -82,6 +82,7 @@ void WifiNetworkModel::removeAllNetworks()
 {
     beginRemoveRows(QModelIndex(), 0, m_networks.count() - 1);
     qDeleteAll(m_networks.begin(), m_networks.end());
+    m_networks.clear();
     endRemoveRows();
 }
 
