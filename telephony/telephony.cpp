@@ -66,7 +66,8 @@ void Telephony::onConnected()
 		"callStateChanged",
 		"dialingCall",
 		"incomingCall",
-		"terminatedCall"};
+		"terminatedCall",
+		"online"};
 	QStringListIterator eventIterator(events);
 	TelephonyMessage *tmsg;
 
@@ -103,6 +104,8 @@ void Telephony::onMessageReceived(MessageType type, Message *message)
 				setCallState("disconnected");
 				m_colp = "";
 				m_clip = "";
+			} else if (tmsg->isOnline()) {
+				setOnlineState(tmsg->connected());
 			}
 		}
 	}
