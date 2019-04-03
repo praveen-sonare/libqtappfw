@@ -24,6 +24,7 @@ class BluetoothMessage : public Message
     Q_OBJECT
     public:
         bool isDeviceChangesEvent() { return (this->eventName() == "device_changes"); };
+        bool isAdapterChangesEvent() { return (this->eventName() == "adapter_changes"); };
         bool isAgentEvent() { return (this->eventName() == "agent"); };
         bool createRequest(QString verb, QJsonObject parameter);
 
