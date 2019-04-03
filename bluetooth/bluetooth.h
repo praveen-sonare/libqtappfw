@@ -71,6 +71,7 @@ class Bluetooth : public QObject
         void discovery_command(bool);
         void populateDeviceList(QJsonObject data);
         void processDeviceChangesEvent(QJsonObject data);
+        void processAdapterChangesEvent(QJsonObject data);
 
         // slots
         void onConnected();
@@ -86,6 +87,7 @@ class Bluetooth : public QObject
         QMap<QString, QString> uuids;
 
         const QStringList events {
+            "adapter_changes",
             "device_changes",
             "agent",
         };

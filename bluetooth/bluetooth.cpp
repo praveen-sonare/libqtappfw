@@ -225,21 +225,35 @@ void Bluetooth::processDeviceChangesEvent(QJsonObject data)
         BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, data);
         m_bluetooth->addDevice(device);
     } else if (action == "changed") {
-        auto powered = data.find("powered").value();
-
-        if (powered.isBool()) {
-            m_power = powered.toBool();
-            if (!m_power)
-                m_bluetooth->removeAllDevices();
-            emit powerChanged(m_power);
-        } else {
-            BluetoothDevice *device = m_bluetooth->getDevice(id);
-            m_bluetooth->updateDeviceProperties(device, data);
-        }
+        BluetoothDevice *device = m_bluetooth->getDevice(id);
+        m_bluetooth->updateDeviceProperties(device, data);
     } else if (action == "removed") {
         BluetoothDevice *device = m_bluetooth->getDevice(id);
         m_bluetooth->removeDevice(device);
     }
+}
+
+void Bluetooth::processAdapterChangesEvent(QJsonObject data)
+{
+    QString action = data.value("action").toString();
+    if (action != "changed")
+        return;
+
+    QJsonObject properties = data.value("properties").toObject();
+    if (!properties.contains("powered"))
+        return;
+
+    bool powered = properties.find("powered").value().toBool();
+    if (!powered)
+        m_bluetooth->removeAllDevices();
+
+    if (m_power != powered) {
+        m_power = powered;
+        emit powerChanged(powered);
+    }
+
+    if (!m_power)
+        m_discoverable = false;
 }
 
 void Bluetooth::onMessageReceived(MessageType type, Message *msg)
@@ -249,6 +263,8 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
 
         if (tmsg->isDeviceChangesEvent()) {
             processDeviceChangesEvent(tmsg->eventData());
+        } else if (tmsg->isAdapterChangesEvent()) {
+            processAdapterChangesEvent(tmsg->eventData());
         } else if (tmsg->isAgentEvent()) {
             emit requestConfirmationEvent(tmsg->eventData());
         }
@@ -259,8 +275,11 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
         if (tmsg->requestVerb() == "managed_objects") {
             populateDeviceList(tmsg->replyData());
         } else if (tmsg->requestVerb() == "adapter_state") {
-            m_power = tmsg->replyData().value("powered").toBool();
-            emit powerChanged(m_power);
+            bool powered = tmsg->replyData().value("powered").toBool();
+            if (m_power != powered) {
+                m_power = powered;
+                emit powerChanged(m_power);
+            }
         }
     }
 
