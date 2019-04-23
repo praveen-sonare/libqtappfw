@@ -44,11 +44,11 @@ class Network : public QObject
 
         Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
         Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
-        Q_PROPERTY(bool wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
+        Q_PROPERTY(int wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
 
         bool wifiConnected() const { return m_wifiConnected; }
         bool wifiEnabled() const { return m_wifiEnabled; }
-        bool wifiStrength() const { return m_wifiStrength; }
+        int wifiStrength() const { return m_wifiStrength; }
 
     signals:
         void inputRequest(int id);
