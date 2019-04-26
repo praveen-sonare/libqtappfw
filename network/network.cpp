@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <QMetaEnum>
-#include <QSortFilterProxyModel>
 #include <QtQml/QQmlEngine>
 
 #include <vcard/vcard.h>
@@ -25,36 +23,25 @@
 #include "network.h"
 #include "networkmessage.h"
 #include "responsemessage.h"
-#include "wifinetworkmodel.h"
+#include "networkadapter.h"
 
 Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
-    m_mloop(nullptr),
-    m_wifi(nullptr),
-    m_wifiConnected(false),
-    m_wifiEnabled(false),
-    m_wifiStrength(0)
+    m_mloop(nullptr)
 {
     m_mloop = new MessageEngine(url);
-    m_wifi = new WifiNetworkModel();
-
-    QSortFilterProxyModel *m_model = new QSortFilterProxyModel();
-    m_model->setSourceModel(m_wifi);
-    m_model->setSortRole(WifiNetworkModel::WifiNetworkRoles::SsidRole);
-    m_model->setSortCaseSensitivity(Qt::CaseInsensitive);
-    m_model->sort(0);
-    context->setContextProperty("WifiNetworkModel", m_model);
+    m_adapters.append(new WifiAdapter(this, context, parent));
 
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Network::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Network::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Network::onMessageReceived);
-    QObject::connect(m_wifi, &WifiNetworkModel::strengthChanged, this, &Network::updateWifiStrength);
 }
 
 Network::~Network()
 {
     delete m_mloop;
-    delete m_wifi;
+    while (!m_adapters.isEmpty())
+        m_adapters.takeLast();
 }
 
 void Network::connect(QString service)
@@ -93,6 +80,14 @@ void Network::remove(QString service)
     delete nmsg;
 }
 
+void Network::power(bool on, QString type)
+{
+    if (on)
+        enableTechnology(type);
+    else
+        disableTechnology(type);
+}
+
 void Network::input(int id, QString passphrase)
 {
     NetworkMessage *nmsg = new NetworkMessage();
@@ -107,21 +102,67 @@ void Network::input(int id, QString passphrase)
     delete nmsg;
 }
 
-void Network::power(bool on)
+void Network::getServices()
 {
-    if (on)
-        enableTechnology("wifi");
-    else
-        disableTechnology("wifi");
+    NetworkMessage *nmsg = new NetworkMessage();
+    QJsonObject parameter;
+
+    nmsg->createRequest("services", parameter);
+    m_mloop->sendMessage(nmsg);
+    delete nmsg;
 }
 
-void Network::enableTechnology(QString type)
+AdapterIf* Network::findAdapter(QString type)
+{
+    QList<AdapterIf*>::iterator iter;
+    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+        if  ((*iter)->getType() == type)
+            return (*iter);
+}
+
+void Network::updateServiceProperties(QJsonObject data)
+{
+    QString service = data.value("service").toString();
+    QJsonObject properties = data.value("properties").toObject();
+    QList<AdapterIf*>::iterator iter;
+    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+        (*iter)->updateProperties(service, properties);
+
+}
+
+bool Network::addService(QJsonObject service)
+{
+    QString id = service.value("service").toString();
+    QJsonObject properties = service.value("properties").toObject();
+    QList<AdapterIf*>::iterator iter;
+    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+        if ((*iter)->addService(id, properties))
+            return true;
+
+    return false;
+}
+
+void Network::removeService(QJsonObject service)
+{
+    QString id = service.value("service").toString();
+    QList<AdapterIf*>::iterator iter;
+    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+        (*iter)->removeService(id);
+}
+
+void Network::addServices(QJsonArray services)
+{
+    for (auto service : services)
+        addService(service.toObject());
+}
+
+void Network::scanServices(QString type)
 {
     NetworkMessage *nmsg = new NetworkMessage();
     QJsonObject parameter;
 
     parameter.insert("technology", type);
-    nmsg->createRequest("enable_technology", parameter);
+    nmsg->createRequest("scan_services", parameter);
     m_mloop->sendMessage(nmsg);
 
     delete nmsg;
@@ -139,96 +180,16 @@ void Network::disableTechnology(QString type)
     delete nmsg;
 }
 
-void Network::scanServices(QString type)
+void Network::enableTechnology(QString type)
 {
     NetworkMessage *nmsg = new NetworkMessage();
     QJsonObject parameter;
 
     parameter.insert("technology", type);
-    nmsg->createRequest("scan_services", parameter);
+    nmsg->createRequest("enable_technology", parameter);
     m_mloop->sendMessage(nmsg);
 
     delete nmsg;
-}
-
-bool Network::addService(QJsonObject service)
-{
-        // Ignore services that are already added
-        QString id = service.value("service").toString();
-        if (m_wifi->getNetwork(id))
-            return false;
-
-        QJsonObject properties = service.value("properties").toObject();
-
-        // Ignore hidden SSIDs
-        QString ssid = properties.value("name").toString();
-        if (ssid == "")
-            return false;
-
-        // Ignore technologies other than WiFi
-        QString type = properties.value("type").toString();
-        if (type != "wifi")
-            return false;
-
-        // Initially support only IPv4 and the first security method found
-        QString address = properties.value("ipv4").toObject().value("address").toString();
-        QString security = properties.value("security").toArray().at(0).toString();
-        QString state = properties.value("state").toString();
-        int strength = properties.value("strength").toInt();
-
-        WifiNetwork *network = new WifiNetwork(address, security, id, ssid, state, strength);
-        m_wifi->addNetwork(network);
-
-        if ((state == "ready") || (state == "online"))
-            updateWifiStrength(strength);
-
-        return true;
-}
-
-void Network::removeService(QJsonObject service)
-{
-    QString id = service.value("service").toString();
-    WifiNetwork *network = m_wifi->getNetwork(id);
-
-    if (network)
-        m_wifi->removeNetwork(network);
-}
-
-void Network::addServices(QJsonArray services)
-{
-    for (auto service : services)
-        addService(service.toObject());
-}
-
-void Network::getServices()
-{
-    NetworkMessage *nmsg = new NetworkMessage();
-    QJsonObject parameter;
-
-    nmsg->createRequest("services", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
-}
-
-void Network::updateWifiStatus(QJsonObject properties)
-{
-    if (properties.contains("connected")) {
-        m_wifiConnected = properties.value("connected").toBool();
-        emit wifiConnectedChanged(m_wifiConnected);
-    }
-
-    if (properties.contains("powered")) {
-        m_wifiEnabled = properties.value("powered").toBool();
-        emit wifiEnabledChanged(m_wifiEnabled);
-        if (m_wifiEnabled)
-            getServices();
-    }
-}
-
-void Network::updateWifiStrength(int strength)
-{
-    m_wifiStrength = strength;
-    emit wifiStrengthChanged(m_wifiStrength);
 }
 
 void Network::parseTechnologies(QJsonArray technologies)
@@ -237,11 +198,10 @@ void Network::parseTechnologies(QJsonArray technologies)
         QJsonObject technology = value.toObject();
         QJsonObject properties = technology.value("properties").toObject();
         QString type = properties.value("type").toString();
+
         if (type == "wifi") {
-            updateWifiStatus(properties);
-            if (m_wifiEnabled)
-                getServices();
-            break;
+            WifiAdapter* wifi_a = static_cast<WifiAdapter*>(findAdapter(type));
+            wifi_a->updateWifiStatus(properties);
         }
     }
 }
@@ -254,13 +214,6 @@ void Network::getTechnologies()
     nmsg->createRequest("technologies", parameter);
     m_mloop->sendMessage(nmsg);
     delete nmsg;
-}
-
-void Network::updateServiceProperties(QJsonObject data)
-{
-    QString service = data.value("service").toString();
-    QJsonObject properties = data.value("properties").toObject();
-    m_wifi->updateProperties(service, properties);
 }
 
 void Network::processEvent(NetworkMessage *nmsg)
@@ -284,7 +237,7 @@ void Network::processEvent(NetworkMessage *nmsg)
             if (action == "changed") {
                 addService(service);
             } else if (action == "removed") {
-                removeService(service);
+                 removeService(service);
             }
         }
     } else if (nmsg->eventName() == "service_properties") {
@@ -293,7 +246,8 @@ void Network::processEvent(NetworkMessage *nmsg)
         QJsonObject technology = nmsg->eventData();
         if (technology.value("technology").toString() == "wifi") {
             QJsonObject properties = technology.value("properties").toObject();
-            updateWifiStatus(properties);
+            WifiAdapter* wifi_a = static_cast<WifiAdapter*>(findAdapter("wifi"));
+            wifi_a->updateWifiStatus(properties);
         }
     }
 }
@@ -353,5 +307,5 @@ void Network::onDisconnected()
         delete nmsg;
     }
 
-    m_wifi->removeAllNetworks();
+    getTechnologies();
 }

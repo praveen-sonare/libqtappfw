@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2018 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@
 #include "messageengine.h"
 #include "networkmessage.h"
 #include "responsemessage.h"
-#include "wifinetworkmodel.h"
+#include "networkadapter.h"
 
 class Network : public QObject
 {
@@ -39,40 +39,28 @@ class Network : public QObject
         Q_INVOKABLE void connect(QString service);
         Q_INVOKABLE void disconnect(QString service);
         Q_INVOKABLE void remove(QString service);
-        Q_INVOKABLE void power(bool on);
+        Q_INVOKABLE void power(bool on, QString type = "wifi");
         Q_INVOKABLE void input(int id, QString passphrase);
 
-        Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
-        Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
-        Q_PROPERTY(int wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
-
-        bool wifiConnected() const { return m_wifiConnected; }
-        bool wifiEnabled() const { return m_wifiEnabled; }
-        int wifiStrength() const { return m_wifiStrength; }
+        void getServices();
+        AdapterIf* findAdapter(QString type);
 
     signals:
         void inputRequest(int id);
         void invalidPassphrase(QString service);
         void searchResults(QString name);
-        void statusChanged(bool connected);
-        void wifiConnectedChanged(bool connected);
-        void wifiEnabledChanged(bool enabled);
-        void wifiStrengthChanged(int strength);
 
     private:
         MessageEngine *m_mloop;
         QQmlContext *m_context;
-        WifiNetworkModel *m_wifi;
-        bool m_wifiConnected;
-        bool m_wifiEnabled;
-        int m_wifiStrength;
+        QList<AdapterIf*> m_adapters;
 
-        void updateWifiStatus(QJsonObject properties);
         void updateServiceProperties(QJsonObject data);
         bool addService(QJsonObject service);
         void removeService(QJsonObject remove);
+
         void addServices(QJsonArray services);
-        void getServices();
+
         void scanServices(QString type);
         void disableTechnology(QString type);
         void enableTechnology(QString type);
@@ -82,10 +70,9 @@ class Network : public QObject
         void processReply(ResponseMessage *rmsg);
 
         // slots
+        void onMessageReceived(MessageType, Message*);
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
-        void updateWifiStrength(int);
 
         const QStringList events {
             "agent",
