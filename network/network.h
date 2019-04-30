@@ -82,6 +82,17 @@ class Network : public QObject
             "technologies",
             "technology_properties",
         };
+
+    /*To be deleted in next patch, dummy methods to keep homescreen build sane*/
+    public:
+        bool wifiConnected() const { return false; }
+        bool wifiEnabled() const { return false; }
+        int  wifiStrength() const { return 0; }
+    signals:
+        void wifiConnectedChanged(bool connected);
+        void wifiEnabledChanged(bool enabled);
+        void wifiStrengthChanged(int strength);
+
 };
 
 #endif // NETWORK_H
