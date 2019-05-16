@@ -159,8 +159,8 @@ class Pbap : public QObject
         QQmlContext *m_context;
         QList<QObject *>m_contacts;
         QList<QObject *>m_calls;
-        void updateContacts(QString);
-        void updateCalls(QString);
+        void updateContacts(QJsonArray);
+        void updateCalls(QJsonArray);
         void sendSearchResults(QJsonArray);
 
         // slots

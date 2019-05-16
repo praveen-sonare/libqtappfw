@@ -18,8 +18,6 @@
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
-#include <vcard/vcard.h>
-
 #include "message.h"
 #include "messageengine.h"
 #include "pbap.h"
@@ -149,56 +147,32 @@ bool compareContactPtr(QObject *a, QObject *b)
     return (*contactA < *contactB);
 }
 
-void Pbap::updateContacts(QString vcards)
+void Pbap::updateContacts(QJsonArray vcards)
 {
-    QString name, number, type;
-
     m_contacts.clear();
 
-    QList<vCard> contacts_vcards = vCard::fromByteArray(vcards.toUtf8());
+    for (auto vcard : vcards) {
+        QJsonObject entry = vcard.toObject();
+        QString image;
 
-    for (auto vcard : contacts_vcards) {
-        vCardProperty name_prop = vcard.property(VC_FORMATTED_NAME);
-        QStringList values = name_prop.values();
-        name = values.at(vCardProperty::DefaultValue);
-        if (name.isEmpty() || name.startsWith('#'))
-            continue;
-        /*
-         * libvcard has no member function to return a list of named
-         * properties, so we iterate over all properties and parse
-         * each identified VC_TELEPHONE property in the vCard.
-         */
+        QString name = entry.value("fn").toString();
         QList<PhoneNumber *> numbers;
-        QString photo;
-        vCardPropertyList properties = vcard.properties();
-        for (auto property : properties) {
-            QStringList values;
 
-            if (!property.isValid())
-                continue;
-
-            values = property.values();
-
-            if (property.name() == VC_TELEPHONE) {
-                number = values.at(0);
-                // Telephone entry can be empty
-                if (number.isEmpty())
-                    continue;
-                vCardParamList params = property.params();
-                // The first parameter is always the phone number type, but is optional
-                if (params.length())
-                    type = params.at(0).value();
-                else
-                    type = "";
-                numbers.append(new PhoneNumber(number, type));
-            } else if (property.name() == VC_PHOTO) {
-                QMimeDatabase db;
-                QMimeType type = db.mimeTypeForData(QByteArray::fromBase64(values.at(0).toLocal8Bit()));
-                photo = "data:" + type.name() + ";base64," + values.at(0);
-            }
+        for (auto number: entry.value("telephone").toArray()) {
+            QString type = number.toObject().keys().at(0);
+            QString tel = number.toObject().value(type).toString();
+            numbers.append(new PhoneNumber(tel, type));
         }
+
+        if (entry.contains("photo")) {
+            QJsonObject photo = entry.value("photo").toObject();
+            QString mimetype = photo.value("mimetype").toString();
+            QString mimedata = photo.value("data").toString();
+            image = "data:" + mimetype + ";base64," + mimedata;
+        }
+
         if (!numbers.isEmpty())
-            m_contacts.append(new Contact(name, photo, numbers));
+            m_contacts.append(new Contact(name, image, numbers));
     }
 
     std::sort(m_contacts.begin(), m_contacts.end(), compareContactPtr);
@@ -209,25 +183,16 @@ void Pbap::updateContacts(QString vcards)
     refreshCalls(100);
 }
 
-#define VC_DATETIME "X-IRMC-CALL-DATETIME"
-
-void Pbap::updateCalls(QString vcards)
+void Pbap::updateCalls(QJsonArray vcards)
 {
     QString name, number, datetime, type;
 
     m_calls.clear();
 
-    QList<vCard> history_vcards = vCard::fromByteArray(vcards.toUtf8());
-
-    for (auto vcard : history_vcards) {
-        vCardProperty number_prop = vcard.property(VC_TELEPHONE);
-        if (number_prop.isValid()) {
-            QStringList values = number_prop.values();
-            number = values.at(0);
-        }
-        vCardProperty name_prop = vcard.property(VC_FORMATTED_NAME);
-        QStringList values = name_prop.values();
-        name = values.at(0);
+    for (auto vcard : vcards) {
+        QJsonObject entry = vcard.toObject();
+        name = entry.value("fn").toString();
+        number = entry.value("telephone").toString();
         // For calls with an empty name, fetch the name from contacts
         if (name.isEmpty()) {
             bool found = false;
@@ -247,18 +212,16 @@ void Pbap::updateCalls(QString vcards)
             if (!found)
                 name = number;
         }
-        vCardProperty datetime_prop = vcard.property(VC_DATETIME);
-        if (datetime_prop.isValid()) {
-            vCardParamList params = datetime_prop.params();
-            QStringList values = datetime_prop.values();
-            type = params.at(0).value();
-            datetime = values.at(0);
-            // Convert the PBAP date/time to ISO 8601 format
-            datetime.insert(4, '-');
-            datetime.insert(7, '-');
-            datetime.insert(13, ':');
-            datetime.insert(16, ':');
-        }
+
+        type = entry.value("type").toString();
+        datetime = entry.value("timestamp").toString();
+
+        // Convert the PBAP date/time to ISO 8601 format
+        datetime.insert(4, '-');
+        datetime.insert(7, '-');
+        datetime.insert(13, ':');
+        datetime.insert(16, ':');
+
         m_calls.append(new RecentCall(name, number, datetime, type));
     }
 
@@ -323,9 +286,9 @@ void Pbap::onMessageReceived(MessageType type, Message *msg)
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (tmsg->requestVerb() == "contacts") {
-            updateContacts(tmsg->replyData().value("vcards").toString());
+            updateContacts(tmsg->replyData().value("vcards").toArray());
         } else if (tmsg->requestVerb() == "history") {
-            updateCalls(tmsg->replyData().value("vcards").toString());
+            updateCalls(tmsg->replyData().value("vcards").toArray());
         } else if (tmsg->requestVerb() == "search") {
             sendSearchResults(tmsg->replyData().value("results").toArray());
         }

@@ -61,7 +61,7 @@ endforeach()
 
 add_library(qtappfw SHARED ${SRCS})
 
-target_link_libraries(qtappfw Qt5::WebSockets vcard)
+target_link_libraries(qtappfw Qt5::WebSockets)
 set_target_properties(qtappfw PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

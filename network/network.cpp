@@ -16,8 +16,6 @@
 
 #include <QtQml/QQmlEngine>
 
-#include <vcard/vcard.h>
-
 #include "message.h"
 #include "messageengine.h"
 #include "network.h"
