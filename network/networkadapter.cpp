@@ -21,6 +21,7 @@
 #include "network.h"
 #include "networkadapter.h"
 #include "wifinetworkmodel.h"
+#include "connectionprofile.h"
 
 WifiAdapter::WifiAdapter(Network *network, QQmlContext *context, QObject *parent) :
     QObject(parent),
@@ -93,7 +94,7 @@ bool WifiAdapter::addService(QString id, QJsonObject properties)
     if (type != getType())
         return false;
 
-    WifiNetwork *network = new WifiNetwork(address, security, id, ssid, state, strength);
+    ConnectionProfile *network = new ConnectionProfile(address, security, id, state, ssid, strength);
     m_model->addNetwork(network);
 
     if ((state == "ready") || (state == "online"))
