@@ -116,6 +116,7 @@ AdapterIf* Network::findAdapter(QString type)
     for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
         if  ((*iter)->getType() == type)
             return (*iter);
+    return nullptr;
 }
 
 void Network::updateServiceProperties(QJsonObject data)
