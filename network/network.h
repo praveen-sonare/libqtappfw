@@ -26,7 +26,8 @@
 #include "messageengine.h"
 #include "networkmessage.h"
 #include "responsemessage.h"
-#include "networkadapter.h"
+#include "wifiadapter.h"
+#include "wiredadapter.h"
 
 class Network : public QObject
 {

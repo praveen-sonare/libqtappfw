@@ -33,6 +33,8 @@ Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject::connect(m_mloop, &MessageEngine::connected, this, &Network::onConnected);
     QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Network::onDisconnected);
     QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Network::onMessageReceived);
+
+    m_adapters.append(new WiredAdapter(this, context, parent));
 }
 
 Network::~Network()
@@ -198,10 +200,9 @@ void Network::parseTechnologies(QJsonArray technologies)
         QJsonObject properties = technology.value("properties").toObject();
         QString type = properties.value("type").toString();
 
-        if (type == "wifi") {
-            WifiAdapter* wifi_a = static_cast<WifiAdapter*>(findAdapter(type));
-            wifi_a->updateWifiStatus(properties);
-        }
+	AdapterIf* adapter = findAdapter(type);
+	if (adapter)
+	    adapter->updateStatus(properties);
     }
 }
 
@@ -243,11 +244,11 @@ void Network::processEvent(NetworkMessage *nmsg)
         updateServiceProperties(nmsg->eventData());
     } else if (nmsg->eventName() == "technology_properties") {
         QJsonObject technology = nmsg->eventData();
-        if (technology.value("technology").toString() == "wifi") {
-            QJsonObject properties = technology.value("properties").toObject();
-            WifiAdapter* wifi_a = static_cast<WifiAdapter*>(findAdapter("wifi"));
-            wifi_a->updateWifiStatus(properties);
-        }
+        QJsonObject properties = technology.value("properties").toObject();
+        QString type = technology.value("technology").toString();
+        AdapterIf* adapter = findAdapter(type);
+        if (adapter)
+            adapter->updateStatus(properties);
     }
 }
 

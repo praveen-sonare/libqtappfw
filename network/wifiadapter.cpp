@@ -49,7 +49,7 @@ WifiAdapter::~WifiAdapter()
     delete m_model;
 }
 
-void WifiAdapter::updateWifiStatus(QJsonObject properties)
+void WifiAdapter::updateStatus(QJsonObject properties)
 {
     if (properties.contains("connected")) {
         m_wifiConnected = properties.value("connected").toBool();
@@ -78,9 +78,12 @@ void WifiAdapter::updateProperties(QString id, QJsonObject properties)
 
 bool WifiAdapter::addService(QString id, QJsonObject properties)
 {
+    QString type = properties.value("type").toString();
+    if (type != getType())
+        return false;
+
     QString ssid = properties.value("name").toString();
     QString state = properties.value("state").toString();
-    QString type = properties.value("type").toString();
     int strength = properties.value("strength").toInt();
     // Initially support only IPv4 and the first security method found
     QString address = properties.value("ipv4").toObject().value("address").toString();
@@ -88,10 +91,6 @@ bool WifiAdapter::addService(QString id, QJsonObject properties)
 
     // Ignore hidden SSIDs or services already added
     if (m_model->getNetwork(id) || (ssid == ""))
-        return false;
-
-    // only process wifi services
-    if (type != getType())
         return false;
 
     ConnectionProfile *network = new ConnectionProfile(address, security, id, state, ssid, strength);
@@ -108,4 +107,3 @@ void WifiAdapter::removeService(QString id)
     m_model->removeNetwork(m_model->getNetwork(id));
 
 }
-

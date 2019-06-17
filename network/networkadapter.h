@@ -24,6 +24,7 @@
 
 class Network;
 class WifiNetworkModel;
+class WiredNetworkModel;
 
 class AdapterIf
 {
@@ -33,47 +34,10 @@ class AdapterIf
         virtual bool addService(QString id, QJsonObject properties) = 0;
         virtual void removeService(QString id) = 0;
         virtual void updateProperties(QString service, QJsonObject properties) = 0;
+
         virtual QString getType() = 0;
+        virtual void updateStatus(QJsonObject properties) = 0;
 };
-
 Q_DECLARE_INTERFACE(AdapterIf, "AdapterIf")
-
-class WifiAdapter : public QObject, public AdapterIf
-{
-    Q_OBJECT
-    Q_INTERFACES(AdapterIf)
-    Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
-    Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
-    Q_PROPERTY(int wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
-
-    public:
-        explicit WifiAdapter(Network *network, QQmlContext *context, QObject *parent);
-        virtual ~WifiAdapter();
-
-        bool wifiConnected() const { return m_wifiConnected; }
-        bool wifiEnabled() const { return m_wifiEnabled; }
-        int wifiStrength() const { return m_wifiStrength; }
-        void updateWifiStatus(QJsonObject properties);
-
-        bool addService(QString id, QJsonObject properties) override;
-        void removeService(QString id) override;
-        void updateProperties(QString service, QJsonObject properties) override;
-        QString getType() override { return "wifi"; }
-
-    //slots
-        void updateWifiStrength(int);
-
-    signals:
-        void wifiConnectedChanged(bool connected);
-        void wifiEnabledChanged(bool enabled);
-        void wifiStrengthChanged(int strength);
-
-    private:
-        bool m_wifiConnected;
-        bool m_wifiEnabled;
-        int m_wifiStrength;
-        WifiNetworkModel *m_model;
-        Network *nw;
-};
 
 #endif // ADAPTER_H
