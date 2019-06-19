@@ -146,6 +146,7 @@ class Pbap : public QObject
         explicit Pbap(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Pbap();
 
+        Q_INVOKABLE void importContacts(int max_entries);
         Q_INVOKABLE void refreshContacts(int max_entries);
         Q_INVOKABLE void refreshCalls(int max_entries);
         Q_INVOKABLE void search(QString number);

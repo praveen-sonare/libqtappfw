@@ -29,6 +29,7 @@ class PbapMessage : public Message
 
     private:
         QStringList verbs {
+            "import",
             "contacts",
             "entry",
             "history",
