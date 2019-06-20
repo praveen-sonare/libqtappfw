@@ -98,13 +98,20 @@ Pbap::~Pbap()
     delete m_mloop;
 }
 
-void Pbap::refreshContacts(int max_entries)
+void Pbap::importContacts(int max_entries)
 {
     PbapMessage *tmsg = new PbapMessage();
     QJsonObject parameter;
 
-    if (max_entries >= 0)
-        parameter.insert("max_entries", max_entries);
+    tmsg->createRequest("import", parameter);
+    m_mloop->sendMessage(tmsg);
+    delete tmsg;
+}
+
+void Pbap::refreshContacts(int max_entries)
+{
+    PbapMessage *tmsg = new PbapMessage();
+    QJsonObject parameter;
 
     tmsg->createRequest("contacts", parameter);
     m_mloop->sendMessage(tmsg);
@@ -285,7 +292,7 @@ void Pbap::onMessageReceived(MessageType type, Message *msg)
     } else if (msg->isReply() && type == ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
-        if (tmsg->requestVerb() == "contacts") {
+        if (tmsg->requestVerb() == "contacts") || tmsg->requestVerb() == "import") {
             updateContacts(tmsg->replyData().value("vcards").toArray());
         } else if (tmsg->requestVerb() == "history") {
             updateCalls(tmsg->replyData().value("vcards").toArray());
