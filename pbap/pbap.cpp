@@ -292,7 +292,7 @@ void Pbap::onMessageReceived(MessageType type, Message *msg)
     } else if (msg->isReply() && type == ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
-        if (tmsg->requestVerb() == "contacts") || tmsg->requestVerb() == "import") {
+        if (tmsg->requestVerb() == "contacts" || tmsg->requestVerb() == "import") {
             updateContacts(tmsg->replyData().value("vcards").toArray());
         } else if (tmsg->requestVerb() == "history") {
             updateCalls(tmsg->replyData().value("vcards").toArray());
