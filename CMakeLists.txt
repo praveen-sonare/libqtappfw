@@ -47,6 +47,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtappfw.pc
 
 set (SUBDIRS
 	bluetooth
+	map
 	mediaplayer
 	network
 	pbap

@@ -40,6 +40,7 @@ enum MessageType {
 	BluetoothEventMessage,
 	PbapEventMessage,
 	RadioEventMessage,
+	MapEventMessage,
 };
 
 class Message : public QObject

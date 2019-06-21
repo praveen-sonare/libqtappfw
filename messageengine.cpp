@@ -17,6 +17,7 @@
 #include "message.h"
 #include "messageengine.h"
 #include "bluetoothmessage.h"
+#include "mapmessage.h"
 #include "mediaplayermessage.h"
 #include "networkmessage.h"
 #include "pbapmessage.h"
@@ -129,6 +130,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "radio") {
 			message = new RadioMessage;
 			type = RadioEventMessage;
+		} else if (api == "bluetooth-map") {
+			message = new MapMessage;
+			type = MapEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
