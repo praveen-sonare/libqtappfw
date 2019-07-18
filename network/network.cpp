@@ -200,9 +200,9 @@ void Network::parseTechnologies(QJsonArray technologies)
         QJsonObject properties = technology.value("properties").toObject();
         QString type = properties.value("type").toString();
 
-	AdapterIf* adapter = findAdapter(type);
-	if (adapter)
-	    adapter->updateStatus(properties);
+        AdapterIf* adapter = findAdapter(type);
+        if (adapter)
+            adapter->updateStatus(properties);
     }
 }
 
@@ -233,7 +233,6 @@ void Network::processEvent(NetworkMessage *nmsg)
         for (auto value : services) {
             QJsonObject service = value.toObject();
             QString action = service.value("action").toString();
-            QString id = service.value("service").toString();
             if (action == "changed") {
                 addService(service);
             } else if (action == "removed") {

@@ -11,12 +11,15 @@ AbstractNetworkModel::AbstractNetworkModel(QObject *parent)
 void AbstractNetworkModel::addNetwork(ConnectionProfile *network)
 {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
-    m_networks << network;
+    m_networks.insert(rowCount(), network);
     endInsertRows();
 }
 
 void AbstractNetworkModel::removeNetwork(ConnectionProfile *network)
 {
+    if (m_networks.isEmpty() || (network == nullptr))
+        return;
+
     int row = m_networks.indexOf(network);
     beginRemoveRows(QModelIndex(), row, row);
     m_networks.removeAt(row);
@@ -26,14 +29,20 @@ void AbstractNetworkModel::removeNetwork(ConnectionProfile *network)
 
 void AbstractNetworkModel::removeAllNetworks()
 {
+    if (m_networks.isEmpty())
+        return;
+
     beginRemoveRows(QModelIndex(), 0, m_networks.count() - 1);
     qDeleteAll(m_networks.begin(), m_networks.end());
-    m_networks.clear();
     endRemoveRows();
+    m_networks.clear();
 }
 
 ConnectionProfile *AbstractNetworkModel::getNetwork(QString service)
 {
+    if (m_networks.isEmpty())
+        return nullptr;
+
     for (auto network : m_networks) {
         if (network->service() == service)
             return network;

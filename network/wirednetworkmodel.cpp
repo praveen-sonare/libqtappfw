@@ -9,8 +9,13 @@ WiredNetworkModel::WiredNetworkModel(QObject *parent)
 
 QVariant WiredNetworkModel::data(const QModelIndex &index, int role) const
 {
+    QVariant ret;
+
+    if (!index.isValid())
+        return ret;
+
     if (index.row() < 0 || index.row() >= m_networks.count())
-        return QVariant();
+        return ret;
 
     const ConnectionProfile *network = m_networks[index.row()];
 
@@ -25,7 +30,7 @@ QVariant WiredNetworkModel::data(const QModelIndex &index, int role) const
             return network->state();
     }
 
-    return QVariant();
+    return ret;
 }
 
 QHash<int, QByteArray> WiredNetworkModel::roleNames() const {
