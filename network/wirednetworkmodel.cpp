@@ -1,5 +1,6 @@
 #include "wirednetworkmodel.h"
 #include "connectionprofile.h"
+#include <QVector>
 #include <QDebug>
 
 WiredNetworkModel::WiredNetworkModel(QObject *parent)
@@ -46,17 +47,20 @@ QHash<int, QByteArray> WiredNetworkModel::roleNames() const {
 void WiredNetworkModel::updateProperties(QString service, QJsonObject properties)
 {
     ConnectionProfile *network;
+    QVector<int> vroles;
 
-    // FIXME: add role parameter to emits
     if ((network = getNetwork(service))) {
         if (properties.contains("ipv4")) {
             QString address = properties.value("ipv4").toObject().value("address").toString();
             network->setAddress(address);
-            emit dataChanged(indexOf(network), indexOf(network));
+            vroles.push_back(AddressRole);
         }
         if (properties.contains("state")) {
             network->setState(properties.value("state").toString());
-            emit dataChanged(indexOf(network), indexOf(network));
+            vroles.push_back(StateRole);
         }
+        if (!vroles.isEmpty())
+             emit dataChanged(indexOf(network), indexOf(network), vroles);
+
     }
 }

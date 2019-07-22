@@ -1,5 +1,6 @@
 #include "wifinetworkmodel.h"
 #include "connectionprofile.h"
+#include <QVector>
 #include <QDebug>
 
 WifiNetworkModel::WifiNetworkModel(QObject *parent)
@@ -47,24 +48,33 @@ QHash<int, QByteArray> WifiNetworkModel::roleNames() const {
 void WifiNetworkModel::updateProperties(QString service, QJsonObject properties)
 {
     ConnectionProfile *network;
+    QVector<int> vroles;
+    bool sbcast = false;
 
-    // FIXME: add role parameter to emits
     if ((network = getNetwork(service))) {
         if (properties.contains("ipv4")) {
             QString address = properties.value("ipv4").toObject().value("address").toString();
             network->setAddress(address);
-            emit dataChanged(indexOf(network), indexOf(network));
+            vroles.push_back(AddressRole);
         }
         if (properties.contains("state")) {
             network->setState(properties.value("state").toString());
-            emit dataChanged(indexOf(network), indexOf(network));
+            vroles.push_back(StateRole);
+            if ((network->state() == "ready") ||
+                (network->state() == "online"))
+                sbcast = true;
         }
         if (properties.contains("strength")) {
             network->setStrength(properties.value("strength").toInt());
-            emit dataChanged(indexOf(network), indexOf(network));
+            vroles.push_back(StrengthRole);
             if ((network->state() == "ready") ||
                 (network->state() == "online"))
-                    emit strengthChanged(network->strength());
+                sbcast = true;
+        }
+        if (!vroles.isEmpty()) {
+            emit dataChanged(indexOf(network), indexOf(network), vroles);
+            if (sbcast)
+                emit strengthChanged(network->strength());
         }
     }
 }
