@@ -46,6 +46,26 @@ void Map::compose(QString recipient, QString message)
     delete tmsg;
 }
 
+void Map::message(QString handle)
+{
+    MapMessage *tmsg = new MapMessage();
+    QJsonObject parameter;
+    parameter.insert("handle", handle);
+    tmsg->createRequest("message", parameter);
+    m_mloop->sendMessage(tmsg);
+    delete tmsg;
+}
+
+void Map::listMessages(QString folder)
+{
+    MapMessage *tmsg = new MapMessage();
+    QJsonObject parameter;
+    parameter.insert("folder", folder);
+    tmsg->createRequest("list_messages", parameter);
+    m_mloop->sendMessage(tmsg);
+    delete tmsg;
+}
+
 void Map::onConnected()
 {
     MapMessage *tmsg = new MapMessage();
@@ -54,6 +74,8 @@ void Map::onConnected()
     tmsg->createRequest("subscribe", parameter);
     m_mloop->sendMessage(tmsg);
     delete tmsg;
+
+    listMessages();
 }
 
 void Map::onDisconnected()
@@ -73,6 +95,17 @@ void Map::onMessageReceived(MessageType type, Message *msg)
 
         if (tmsg->isNotificationEvent()) {
             emit notificationEvent(tmsg->eventData().toVariantMap());
+        }
+    } else if (msg->isReply() && type == ResponseRequestMessage) {
+        ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
+
+        if (tmsg->requestVerb() == "list_messages") {
+            QString folder = tmsg->requestParameters().value("folder").toString();
+            QVariantMap listing = tmsg->replyData().value("messages").toObject().toVariantMap();
+            emit listMessagesResult(folder, listing);
+        } else if (tmsg->requestVerb() == "message") {
+            QString handle = tmsg->requestParameters().value("handle").toString();
+            emit messageResult(handle, tmsg->replyData().toVariantMap());
         }
     }
 
