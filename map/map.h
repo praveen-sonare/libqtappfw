@@ -34,9 +34,13 @@ class Map : public QObject
         virtual ~Map();
 
         Q_INVOKABLE void compose(QString recipient, QString message);
+        Q_INVOKABLE void message(QString handle);
+        Q_INVOKABLE void listMessages(QString folder = "inbox");
 
     signals:
         void notificationEvent(QVariantMap message);
+        void listMessagesResult(QString folder, QVariantMap listing);
+        void messageResult(QString handle, QVariantMap message);
 
     private:
         MessageEngine *m_mloop;
