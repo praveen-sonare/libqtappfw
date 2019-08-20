@@ -32,6 +32,11 @@ class ResponseMessage : public Message
         {
             return m_request["verb"].toString();
         }
+
+        inline QVariantMap requestParameters() const
+        {
+            return m_request["parameter"].toMap();
+        }
 };
 
 #endif // RESPONSEMESSAGE_H
