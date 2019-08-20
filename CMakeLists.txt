@@ -46,6 +46,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtappfw.pc
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 
 set (SUBDIRS
+	docs
 	bluetooth
 	map
 	mediaplayer
