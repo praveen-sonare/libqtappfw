@@ -13,10 +13,14 @@ class WiredNetworkModel : public AbstractNetworkModel
             SecurityRole,
             ServiceRole,
             StateRole,
+            RouteRole,
+            NameServerRole,
         };
 
         WiredNetworkModel(QObject *parent = Q_NULLPTR);
 
+        Q_INVOKABLE QVariantList readCurrentRouteConfig(const QModelIndex &index) const;
+        Q_INVOKABLE QVariantList readCurrentNameServerConfig(const QModelIndex &index) const;
         QString getType() const override { return "wired"; }
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
         void updateProperties(QString service, QJsonObject properties) override;

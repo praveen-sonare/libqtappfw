@@ -74,16 +74,25 @@ bool WiredAdapter::addService(QString id, QJsonObject properties)
     if (type != getType())
         return false;
 
-    QString state = properties.value("state").toString();
-    // Initially support only IPv4 and the first security method found
-    QString address = properties.value("ipv4").toObject().value("address").toString();
-    QString security = properties.value("security").toArray().at(0).toString();
-
     // Ignore services already added
     if (m_model->getNetwork(id))
         return false;
 
-    ConnectionProfile *network = new ConnectionProfile(address, security, id, state, "",0);
+    QString state = properties.value("state").toString();
+    // Initially support only IPv4 and the first security method found
+    QString security = properties.value("security").toArray().at(0).toString();
+    QJsonObject ipv4obj = properties.value("ipv4").toObject();
+    QString address = ipv4obj.value("address").toString();
+    QString netmask = ipv4obj.value("netmask").toString();
+    QString gateway = ipv4obj.value("gateway").toString();
+    QString amethod = ipv4obj.value("method").toString();
+    QString ns = properties.value("nameservers").toString();
+    QString nsmethod = (amethod == "dhcp")? "auto" : "manual";
+
+    ConnectionProfile *network = new ConnectionProfile(address, security, id,
+                                                       state, "", 0, netmask,
+                                                       gateway, amethod, ns,
+                                                       nsmethod);
     m_model->addNetwork(network);
 
     return true;

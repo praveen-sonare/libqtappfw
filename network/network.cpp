@@ -102,6 +102,50 @@ void Network::input(int id, QString passphrase)
     delete nmsg;
 }
 
+void Network::configureAddress(QString service, QVariantList paramlist)
+{
+    NetworkMessage *nmsg = new NetworkMessage();
+    QJsonObject parameter, properties;
+    QJsonArray  values = QJsonArray::fromVariantList(paramlist);
+
+    if (values.isEmpty() || values.count() < 4) {
+        qWarning("Invalid addressing params");
+        return;
+    }
+
+    properties.insert("method", values[0]);
+    properties.insert("address", values[1]);
+    properties.insert("netmask", values[2]);
+    properties.insert("gateway", values[3]);
+    parameter.insert("properties", properties);
+    parameter.insert("service", service);
+
+    nmsg->createRequest("set_property", parameter);
+    m_mloop->sendMessage(nmsg);
+    delete nmsg;
+}
+
+void Network::configureNameServer(QString service, QVariantList paramlist)
+{
+    NetworkMessage *nmsg = new NetworkMessage();
+    QJsonObject parameter, properties;
+    QJsonArray  values = QJsonArray::fromVariantList(paramlist);
+
+    if (values.isEmpty() || values.count() < 2) {
+        qWarning("Invalid nameserver params");
+        return;
+    }
+
+    parameter.insert("service", service);
+    properties.insert("method", values[0]);
+    properties.insert("nameservers", values[1]);
+    parameter.insert("properties", properties);
+
+    nmsg->createRequest("set_property", parameter);
+    m_mloop->sendMessage(nmsg);
+    delete nmsg;
+}
+
 void Network::getServices()
 {
     NetworkMessage *nmsg = new NetworkMessage();
