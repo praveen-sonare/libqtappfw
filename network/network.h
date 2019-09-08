@@ -42,6 +42,8 @@ class Network : public QObject
         Q_INVOKABLE void remove(QString service);
         Q_INVOKABLE void power(bool on, QString type = "wifi");
         Q_INVOKABLE void input(int id, QString passphrase);
+        Q_INVOKABLE void configureAddress(QString service, QVariantList paramlist);
+        Q_INVOKABLE void configureNameServer(QString service, QVariantList paramlist);
 
         void getServices();
         AdapterIf* findAdapter(QString type);

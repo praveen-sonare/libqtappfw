@@ -83,17 +83,18 @@ bool WifiAdapter::addService(QString id, QJsonObject properties)
         return false;
 
     QString ssid = properties.value("name").toString();
+    // Ignore hidden SSIDs or services already added
+    if (m_model->getNetwork(id) || (ssid == ""))
+        return false;
+
     QString state = properties.value("state").toString();
     int strength = properties.value("strength").toInt();
     // Initially support only IPv4 and the first security method found
     QString address = properties.value("ipv4").toObject().value("address").toString();
     QString security = properties.value("security").toArray().at(0).toString();
 
-    // Ignore hidden SSIDs or services already added
-    if (m_model->getNetwork(id) || (ssid == ""))
-        return false;
-
-    ConnectionProfile *network = new ConnectionProfile(address, security, id, state, ssid, strength);
+    ConnectionProfile *network = new ConnectionProfile(address, security, id, state, ssid,
+                                                       strength, "", "", "", "", "");
     m_model->addNetwork(network);
 
     if ((state == "ready") || (state == "online"))

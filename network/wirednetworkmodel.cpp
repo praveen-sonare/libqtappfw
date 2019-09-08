@@ -8,6 +8,40 @@ WiredNetworkModel::WiredNetworkModel(QObject *parent)
 {
 }
 
+QVariantList WiredNetworkModel::readCurrentRouteConfig(const QModelIndex &index) const
+{
+    QVariantList ret;
+
+    if (!index.isValid())
+        return ret;
+
+    if (index.row() < 0 || index.row() >= this->m_networks.count())
+        return ret;
+
+    const ConnectionProfile *network = this->m_networks[index.row()];
+    ret.append(network->addrmethod());
+    ret.append(network->address());
+    ret.append(network->netmask());
+    ret.append(network->gateway());
+    return ret;
+}
+
+QVariantList WiredNetworkModel::readCurrentNameServerConfig(const QModelIndex &index) const
+{
+    QVariantList ret;
+
+    if (!index.isValid())
+        return ret;
+
+    if (index.row() < 0 || index.row() >= this->m_networks.count())
+        return ret;
+
+    const ConnectionProfile *network = this->m_networks[index.row()];
+    ret.append(network->nsmethod());
+    ret.append(network->nameservers());
+    return ret;
+}
+
 QVariant WiredNetworkModel::data(const QModelIndex &index, int role) const
 {
     QVariant ret;
@@ -29,6 +63,10 @@ QVariant WiredNetworkModel::data(const QModelIndex &index, int role) const
             return network->service();
         case StateRole:
             return network->state();
+        case RouteRole:
+            return readCurrentRouteConfig(index);
+        case NameServerRole:
+            return readCurrentNameServerConfig(index);
     }
 
     return ret;
@@ -40,6 +78,8 @@ QHash<int, QByteArray> WiredNetworkModel::roleNames() const {
     roles[SecurityRole] = "security";
     roles[ServiceRole] = "service";
     roles[StateRole] = "sstate";
+    roles[RouteRole] = "sroute";
+    roles[NameServerRole] = "nservers";
 
     return roles;
 }
@@ -51,9 +91,20 @@ void WiredNetworkModel::updateProperties(QString service, QJsonObject properties
 
     if ((network = getNetwork(service))) {
         if (properties.contains("ipv4")) {
-            QString address = properties.value("ipv4").toObject().value("address").toString();
-            network->setAddress(address);
+            QJsonObject ipv4obj = properties.value("ipv4").toObject();
+            network->setAddress(ipv4obj.value("address").toString());
+            network->setNetmask(ipv4obj.value("netmask").toString());
+            network->setGateway(ipv4obj.value("gateway").toString());
+            network->setAddrMethod(ipv4obj.value("method").toString());
             vroles.push_back(AddressRole);
+            vroles.push_back(RouteRole);
+        }
+        if (properties.contains("nameservers")) {
+            QString nservers = properties.value("nameservers").toString();
+            network->setNameservers(nservers);
+            (network->addrmethod() == "dhcp")? network->setNSMethod("auto") :
+                                             network->setNSMethod("manual");
+            vroles.push_back(NameServerRole);
         }
         if (properties.contains("state")) {
             network->setState(properties.value("state").toString());
