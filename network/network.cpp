@@ -105,7 +105,7 @@ void Network::input(int id, QString passphrase)
 void Network::configureAddress(QString service, QVariantList paramlist)
 {
     NetworkMessage *nmsg = new NetworkMessage();
-    QJsonObject parameter, properties;
+    QJsonObject parameter, type, properties;
     QJsonArray  values = QJsonArray::fromVariantList(paramlist);
 
     if (values.isEmpty() || values.count() < 4) {
@@ -117,7 +117,8 @@ void Network::configureAddress(QString service, QVariantList paramlist)
     properties.insert("address", values[1]);
     properties.insert("netmask", values[2]);
     properties.insert("gateway", values[3]);
-    parameter.insert("properties", properties);
+    type.insert("ipv4.configuration", properties);
+    parameter.insert("properties", type);
     parameter.insert("service", service);
 
     nmsg->createRequest("set_property", parameter);
@@ -136,10 +137,12 @@ void Network::configureNameServer(QString service, QVariantList paramlist)
         return;
     }
 
-    parameter.insert("service", service);
-    properties.insert("method", values[0]);
-    properties.insert("nameservers", values[1]);
+    QStringList nslist = values[1].toString().split(' ');
+    QJsonArray nameservers = QJsonArray::fromStringList(nslist);
+
+    properties.insert("nameservers.configuration", nameservers);
     parameter.insert("properties", properties);
+    parameter.insert("service", service);
 
     nmsg->createRequest("set_property", parameter);
     m_mloop->sendMessage(nmsg);
