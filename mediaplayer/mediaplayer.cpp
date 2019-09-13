@@ -62,6 +62,22 @@ void Mediaplayer::updatePlaylist(QVariantMap playlist)
         m_playlist.append(new Playlist(item));
     }
 
+    if (m_playlist.count() == 0) {
+        QVariantMap tmp, track;
+
+        track.insert("title", "");
+        track.insert("artist", "");
+        track.insert("album", "");
+        track.insert("duration", 0);
+
+        tmp.insert("position", 0);
+        tmp.insert("track", track);
+
+        // clear metadata in UI
+        m_context->setContextProperty("AlbumArt", "");
+        emit metadataChanged(tmp);
+    }
+
     // Refresh model
     m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
 }
