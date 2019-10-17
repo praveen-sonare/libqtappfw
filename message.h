@@ -41,6 +41,7 @@ enum MessageType {
 	PbapEventMessage,
 	RadioEventMessage,
 	MapEventMessage,
+	NavigationEventMessage,
 };
 
 class Message : public QObject

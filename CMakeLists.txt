@@ -50,6 +50,7 @@ set (SUBDIRS
 	bluetooth
 	map
 	mediaplayer
+	navigation
 	network
 	pbap
 	radio
