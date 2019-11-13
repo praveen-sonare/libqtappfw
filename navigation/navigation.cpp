@@ -91,15 +91,6 @@ void Navigation::broadcastStatus(QString state)
     delete nmsg;
 }
 
-void Navigation::broadcastWaypoints(QJsonObject waypoints)
-{
-    NavigationMessage *nmsg = new NavigationMessage();
-    QJsonObject parameter;
-    nmsg->createRequest("broadcast_waypoints", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
-}
-
 void Navigation::onConnected()
 {
     QStringListIterator eventIterator(events);
