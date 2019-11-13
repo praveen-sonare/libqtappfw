@@ -37,7 +37,6 @@ class Navigation : public QObject
         Q_INVOKABLE void broadcastPosition(double lat, double lon, double drc, double dst);
         Q_INVOKABLE void broadcastRouteInfo(double lat, double lon, double route_lat, double route_lon);
         Q_INVOKABLE void broadcastStatus(QString state);
-        Q_INVOKABLE void broadcastWaypoints(QJsonObject waypoints);
 
         // only support one waypoint for now
         Q_INVOKABLE void sendWaypoint(double lat, double lon);
