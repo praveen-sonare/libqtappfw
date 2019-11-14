@@ -19,6 +19,7 @@
 #include "bluetoothmessage.h"
 #include "mapmessage.h"
 #include "mediaplayermessage.h"
+#include "navigationmessage.h"
 #include "networkmessage.h"
 #include "pbapmessage.h"
 #include "radiomessage.h"
@@ -124,6 +125,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "mediaplayer") {
 			message = new MediaplayerMessage;
 			type = MediaplayerEventMessage;
+		} else if (api == "navigation") {
+			message = new NavigationMessage;
+			type = NavigationEventMessage;
 		} else if (api == "network-manager") {
 			message = new NetworkMessage;
 			type = NetworkEventMessage;
