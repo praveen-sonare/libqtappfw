@@ -55,6 +55,7 @@ set (SUBDIRS
 	pbap
 	radio
 	telephony
+	voice
 	weather)
 
 add_headers(message.h messageengine.h responsemessage.h)

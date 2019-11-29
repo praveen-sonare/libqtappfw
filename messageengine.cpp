@@ -26,6 +26,7 @@
 #include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
+#include "voicemessage.h"
 
 #include <QJsonArray>
 
@@ -137,6 +138,15 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "bluetooth-map") {
 			message = new MapMessage;
 			type = MapEventMessage;
+		} else if (api == "vshl-core" ) {
+			message = new VshlCoreVoiceMessage;
+			type = VoiceEventMessage;
+		} else if (api == "vshl-capabilities") {
+			message = new VshlCpbltsVoiceMessage;
+			type = VoiceEventMessage;
+		} else if (api == "alexa-voiceagent") {
+			message = new AlexaVoiceMessage;
+			type = VoiceEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
