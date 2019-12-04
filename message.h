@@ -42,6 +42,7 @@ enum MessageType {
 	RadioEventMessage,
 	MapEventMessage,
 	NavigationEventMessage,
+	SignalComposerEventMessage,
 };
 
 class Message : public QObject

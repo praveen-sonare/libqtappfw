@@ -26,6 +26,7 @@
 #include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
+#include "signalcomposermessage.h"
 
 #include <QJsonArray>
 
@@ -137,6 +138,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "bluetooth-map") {
 			message = new MapMessage;
 			type = MapEventMessage;
+		} else if (api == "signal-composer") {
+			message = new SignalComposerMessage;
+			type = SignalComposerEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
