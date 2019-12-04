@@ -54,6 +54,7 @@ set (SUBDIRS
 	network
 	pbap
 	radio
+	signal-composer
 	telephony
 	voice
 	weather)

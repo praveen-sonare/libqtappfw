@@ -27,6 +27,7 @@
 #include "telephonymessage.h"
 #include "weathermessage.h"
 #include "voicemessage.h"
+#include "signalcomposermessage.h"
 
 #include <QJsonArray>
 
@@ -147,6 +148,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "alexa-voiceagent") {
 			message = new AlexaVoiceMessage;
 			type = VoiceEventMessage;
+		} else if (api == "signal-composer") {
+			message = new SignalComposerMessage;
+			type = SignalComposerEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
