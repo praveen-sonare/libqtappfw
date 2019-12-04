@@ -36,11 +36,11 @@ class VshlCoreVoiceMessage : public VoiceMessage
 	public:
 		virtual ~VshlCoreVoiceMessage() {};
 		bool isAuthStateEvent() const override {
-			return (this->eventName() == "voice_authstate_event"); };
+			return (this->eventName().contains("voice_authstate_event")); };
 		bool isConnectionStateEvent() const override {
-			return (this->eventName() == "voice_connectionstate_event"); };
+			return (this->eventName().contains("voice_connectionstate_event")); };
 		bool isDialogStateEvent() const override {
-			return (this->eventName() == "voice_dialogstate_event"); };
+			return (this->eventName().contains("voice_dialogstate_event")); };
 		bool createRequest(QString verb, QJsonObject parameter) override;
 
 	private:
@@ -53,7 +53,9 @@ class VshlCoreVoiceMessage : public VoiceMessage
 			"setDefaultVoiceAgent",
 		};
 		QStringList events {
-			"",
+			"voice_authstate_event",
+			"voice_dialogstate_event",
+			"voice_connectionstate_event",
 		};
 };
 
@@ -94,7 +96,7 @@ class AlexaVoiceMessage : public VoiceMessage
 	public:
 		virtual ~AlexaVoiceMessage() {};
 		bool isAuthStateEvent() const override {
-			return (!events.contains(this->eventName())); };
+			return (events.contains(this->eventName())); };
 		bool isConnectionStateEvent() const override { return false; };
 		bool isDialogStateEvent() const override { return false; };
 		bool createRequest(QString verb, QJsonObject parameter) override;
