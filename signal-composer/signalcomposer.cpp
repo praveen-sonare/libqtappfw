@@ -76,9 +76,16 @@ void SignalComposer::onMessageReceived(MessageType type, Message *message)
             if(v.canConvert(QMetaType::QString))
                 value = v.toString();
             else
-                qWarning() << "Unconvertible type for uid " << uid;
+                qWarning() << "Unconvertible value type for uid " << uid;
+            QString units = tmsg->eventData().value("unit").toString();
+	    v = tmsg->eventData().value("timestamp").toVariant();
+            quint64 timestamp = 0;
+            if(v.canConvert(QMetaType::ULongLong))
+                timestamp = v.toULongLong();
+            else
+                qWarning() << "Unconvertible timestamp type for uid " << uid;
 
-            emit signalEvent(uid, value);
+            emit signalEvent(uid, value, units, timestamp);
         }
     }
     message->deleteLater();

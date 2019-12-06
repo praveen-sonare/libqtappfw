@@ -32,7 +32,7 @@ class SignalComposer : public QObject
         virtual ~SignalComposer();
 
     signals:
-        void signalEvent(QString uid, QString value);
+        void signalEvent(QString uid, QString value, QString units, quint64 timestamp);
 
     private:
         MessageEngine *m_mloop;
