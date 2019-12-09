@@ -140,13 +140,7 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 			message = new MapMessage;
 			type = MapEventMessage;
 		} else if (api == "vshl-core" ) {
-			message = new VshlCoreVoiceMessage;
-			type = VoiceEventMessage;
-		} else if (api == "vshl-capabilities") {
-			message = new VshlCpbltsVoiceMessage;
-			type = VoiceEventMessage;
-		} else if (api == "alexa-voiceagent") {
-			message = new AlexaVoiceMessage;
+			message = new VoiceMessage;
 			type = VoiceEventMessage;
 		} else if (api == "signal-composer") {
 			message = new SignalComposerMessage;

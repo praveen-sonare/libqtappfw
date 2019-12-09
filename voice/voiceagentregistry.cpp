@@ -26,7 +26,7 @@
 VoiceAgentRegistry::VoiceAgentRegistry(Voice *voice, QQmlContext *context, QObject *parent) :
 	QObject(parent),
 	m_model(nullptr),
-	m_voice(voice)
+	vc(voice)
 {
 	m_model = new VoiceAgentModel();
 	QSortFilterProxyModel *model = new QSortFilterProxyModel();
@@ -102,7 +102,7 @@ void VoiceAgentRegistry::setAuthState(QString id, ServiceAuthState state)
 	const auto stateStr =
 		QMetaEnum::fromType<VoiceAgentRegistry::ServiceAuthState>().valueToKey(state);
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-	if (!vap)
+    if (vap)
 		vap->setAuthState(stateStr);
 }
 
@@ -111,7 +111,7 @@ void VoiceAgentRegistry::setConnectionState(QString id, AgentConnectionState sta
 	const auto stateStr =
 		QMetaEnum::fromType<VoiceAgentRegistry::AgentConnectionState>().valueToKey(state);
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-	if (!vap)
+    if (vap)
 		vap->setConnState(stateStr);
 }
 
@@ -120,15 +120,15 @@ void VoiceAgentRegistry::setDialogState(QString id, VoiceDialogState state)
 	const auto stateStr =
 	QMetaEnum::fromType<VoiceAgentRegistry::VoiceDialogState>().valueToKey(state);
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-	if (!vap)
+    if (vap)
 		vap->setDialogState(stateStr);
 }
 
-void VoiceAgentRegistry::updateCblPair(QString id, QString code, QString url,
-				       bool expired)
+void VoiceAgentRegistry::updateLoginData(QString id, QString code, QString url,
+					 bool expired)
 {
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-	if (!vap) {
+	if (vap) {
 		vap->setLoginCode(code);
 		vap->setLoginUrl(code);
 		vap->setLoginPairExpired(expired);

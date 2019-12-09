@@ -21,23 +21,9 @@
 
 #include "voicemessage.h"
 
-bool VshlCoreVoiceMessage::createRequest(QString verb, QJsonObject parameter)
+bool VoiceMessage::createRequest(QString verb, QJsonObject parameter)
 {
 	if (!verbs.contains(verb))
 		return false;
 	return Message::createRequest("vshl-core", verb, parameter);
-}
-
-bool VshlCpbltsVoiceMessage::createRequest(QString verb, QJsonObject parameter)
-{
-	if (!verbs.contains(verb))
-		return false;
-	return Message::createRequest("vshl-capabilities", verb, parameter);
-}
-
-bool AlexaVoiceMessage::createRequest(QString verb, QJsonObject parameter)
-{
-	if (!verbs.contains(verb))
-		return false;
-	return Message::createRequest("alexa-voiceagent", verb, parameter);
 }

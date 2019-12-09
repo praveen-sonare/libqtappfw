@@ -63,12 +63,12 @@ class VoiceAgentRegistry : public QObject
 		void setAuthState(QString id, ServiceAuthState state);
 		void setConnectionState(QString id, AgentConnectionState state);
 		void setDialogState(QString id, VoiceDialogState state);
-		void updateCblPair(QString id, QString code, QString url,
-				   bool expired);
+		void updateLoginData(QString id, QString code, QString url,
+				     bool expired);
 		int stringToEnum(QString value, QString enumtype);
 	private:
 		VoiceAgentModel *m_model;
-		Voice *m_voice;
+		Voice *vc;
 		QString m_default_aid;
 		QStringList m_regids;
 };

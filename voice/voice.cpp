@@ -45,7 +45,7 @@ Voice::~Voice()
 
 void Voice::scan()
 {
-	VoiceMessage *vmsg = new VshlCoreVoiceMessage();
+    VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	vmsg->createRequest("enumerateVoiceAgents", parameter);
@@ -55,18 +55,13 @@ void Voice::scan()
 
 void Voice::getCBLpair(QString id)
 {
-	VoiceMessage *vmsg = new AlexaVoiceMessage();
-	QJsonObject parameter;
-
-	vmsg->createRequest("subscribeToCBLEvents", parameter);
-	m_loop->sendMessage(vmsg);
-	delete vmsg;
+	subscribeAgentToLoginEvents(id);
 }
 
 void Voice::subscribeAgentToVshlEvents(QString id)
 {
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-	VoiceMessage *vmsg = new VshlCoreVoiceMessage();
+    VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
@@ -79,7 +74,7 @@ void Voice::subscribeAgentToVshlEvents(QString id)
 void Voice::unsubscribeAgentFromVshlEvents(QString id)
 {
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-	VoiceMessage *vmsg = new VshlCoreVoiceMessage();
+        VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
@@ -89,15 +84,18 @@ void Voice::unsubscribeAgentFromVshlEvents(QString id)
 	delete vmsg;
 }
 
-void Voice::subscribeAgentToCblEvents(QString id)
+void Voice::subscribeAgentToLoginEvents(QString id)
 {
-	QJsonArray events = QJsonArray::fromStringList(cbl_events);
-	VoiceMessage *vmsg = new AlexaVoiceMessage();
+	QJsonArray events = QJsonArray::fromStringList(login_events);
+        VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
 	parameter.insert("events", events);
-	vmsg->createRequest("subscribeToCBLEvent", parameter);
+	vmsg->createRequest("subscribeToLoginEvents", parameter);
+        m_loop->sendMessage(vmsg);
+        //subscribe to events from vshl:
+        vmsg->createRequest("subscribe", parameter);
 	m_loop->sendMessage(vmsg);
 	delete vmsg;
 }
@@ -121,49 +119,68 @@ void Voice::processVshlEvent(VoiceMessage *vmsg)
 		strlist = str.split('#');
 	QString agentId = (strlist.isEmpty())?  m_var->getDefaultId() :
 						strlist.takeLast();
+	if (obj.isEmpty()) {
+		qWarning() << "vshl event has no eventdata" << str;
+		return;
+	}
 	if (vmsg->isAuthStateEvent()) {
 		const QString authstate = obj.value("state").toString();
-		m_var->setAuthState(
-			agentId,
-			static_cast<VoiceAgentRegistry::ServiceAuthState>(
-				m_var->stringToEnum(authstate, "ServiceAuthState")));
+		if (!authstate.isEmpty()) 
+			m_var->setAuthState(
+				agentId,
+				static_cast<VoiceAgentRegistry::ServiceAuthState>(
+					m_var->stringToEnum(authstate, "ServiceAuthState")));
 	} else if (vmsg->isConnectionStateEvent()) {
 		const QString connstate = obj.value("state").toString();
-		m_var->setConnectionState(
-			agentId,
-			static_cast<VoiceAgentRegistry::AgentConnectionState>(
-				m_var->stringToEnum(connstate, "AgentConnectionState")));
+		if (!connstate.isEmpty())
+			m_var->setConnectionState(
+				agentId,
+				static_cast<VoiceAgentRegistry::AgentConnectionState>(
+					m_var->stringToEnum(connstate, "AgentConnectionState")));
 	} else if (vmsg->isDialogStateEvent()) {
 		const QString dialogstate = obj.value("state").toString();
-		m_var->setDialogState(
-			agentId,
-			static_cast<VoiceAgentRegistry::VoiceDialogState>(
-			m_var->stringToEnum(dialogstate, "VoiceDialogState")));
+		if (!dialogstate.isEmpty())
+			m_var->setDialogState(
+				agentId,
+				static_cast<VoiceAgentRegistry::VoiceDialogState>(
+				m_var->stringToEnum(dialogstate, "VoiceDialogState")));
 	} else
-		qWarning() << "Discarding vshl event:" << str;
+		processLoginEvent(vmsg);
 }
 
-void Voice::processCblEvent(VoiceMessage *vmsg)
+void Voice::processLoginEvent(VoiceMessage *vmsg)
 {
 	const QString str = vmsg->eventName();
 	const QJsonObject obj = vmsg->eventData();
-	QStringList strlist;
 
+	if (obj.isEmpty()) {
+		qWarning() << "no data for event:" << str;
+		return;
+	}
+
+	QStringList strlist;
 	if (str.contains('#'))
 		strlist = str.split('#');
-	QString cblevent = (strlist.isEmpty())? QString() : strlist.takeFirst();
-	QString agentId =  (strlist.isEmpty())? m_var->getDefaultId() :
-						strlist.takeLast();
-	if (cblevent == "voice_cbl_codepair_received_event") {
-		QString code = obj.value("code").toString();
-		QString url = obj.value("url").toString();
-		m_var->updateCblPair(agentId, code, url, false);
-	} else if (cblevent == "voice_cbl_codepair_expired_event") {
-		QString code = obj.value("code").toString();
-		QString url = obj.value("url").toString();
-		m_var->updateCblPair(agentId, code, url, true);
+	QString loginevent = (strlist.isEmpty())? str : strlist.takeFirst();
+	QString agentId =  (strlist.isEmpty())?
+				m_var->getDefaultId() : strlist.takeLast();
+
+	if (loginevent.contains("codepair_received")) {
+		QString id = obj.value("va_id").toString();
+		QJsonObject payload = obj.value("payload").toObject();
+		QJsonObject payload2 = payload.value("payload").toObject();
+		auto  data_iter = payload2.find("code");
+		auto url_iter = payload2.find("url");
+		QString code = data_iter.value().toString();
+		QString url = url_iter.value().toString();
+		m_var->updateLoginData(id, code, url, false);
+	} else if (loginevent.contains("codepair_expired")) {
+		QString id = obj.value("va_id").toString();
+		QString code = QString();
+		QString url = QString();
+		m_var->updateLoginData(id, code, url, true);
 	} else
-		qWarning() << "Discarding cbl event:" << str;
+		qWarning() << "Discarding event:" << str;
 }
 
 void Voice::processEvent(VoiceMessage *vmsg)
@@ -171,20 +188,20 @@ void Voice::processEvent(VoiceMessage *vmsg)
 	const QString api = vmsg->eventApi();
 	if (api == "vshl-core")
 		processVshlEvent(vmsg);
-	else if (api == "alexa-voiceagent")
-		processCblEvent(vmsg);
 	else
 		qWarning() << "Unknown api:" << api;
 }
 
 void Voice::processReply(ResponseMessage *rmsg)
 {
-	if (rmsg->requestVerb() == "enumerateVoiceAgents") {
+	if (rmsg->replyStatus() == "failed") {
+		qWarning() << "Reply Failed received for verb:" <<  rmsg->requestVerb();
+	} else	if (rmsg->requestVerb() == "enumerateVoiceAgents") {
 		parseAgentsList(rmsg->replyData().value("agents").toArray());
 		m_var->setDefaultId(
 				rmsg->replyData().value("default").toString());
 	} else
-		qWarning() << "Reply received for unknown verb:" <<
+		qWarning() << "success reply received for verb:" <<
 							rmsg->requestVerb();
 }
 

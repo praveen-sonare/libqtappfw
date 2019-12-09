@@ -24,24 +24,15 @@ class VoiceMessage : public Message
 	Q_OBJECT
 	public:
 		virtual ~VoiceMessage() {};
-		virtual bool isAuthStateEvent() const = 0;
-		virtual bool isConnectionStateEvent() const = 0;
-		virtual bool isDialogStateEvent() const = 0;
-		virtual bool createRequest(QString verb, QJsonObject parameter) = 0;
-};
-
-class VshlCoreVoiceMessage : public VoiceMessage
-{
-	Q_OBJECT
-	public:
-		virtual ~VshlCoreVoiceMessage() {};
-		bool isAuthStateEvent() const override {
+		bool isAuthStateEvent() const {
 			return (this->eventName().contains("voice_authstate_event")); };
-		bool isConnectionStateEvent() const override {
+		bool isConnectionStateEvent() const {
 			return (this->eventName().contains("voice_connectionstate_event")); };
-		bool isDialogStateEvent() const override {
+		bool isDialogStateEvent() const {
 			return (this->eventName().contains("voice_dialogstate_event")); };
-		bool createRequest(QString verb, QJsonObject parameter) override;
+		bool isCblEvent() const {
+			return (this->eventName().contains("cbl")); };
+		bool createRequest(QString verb, QJsonObject parameter);
 
 	private:
 		QStringList verbs {
@@ -51,64 +42,16 @@ class VshlCoreVoiceMessage : public VoiceMessage
 			"unsubscribe",
 			"enumerateVoiceAgents",
 			"setDefaultVoiceAgent",
+			"subscribeToLoginEvents",
 		};
 		QStringList events {
 			"voice_authstate_event",
 			"voice_dialogstate_event",
 			"voice_connectionstate_event",
-		};
-};
-
-class VshlCpbltsVoiceMessage : public VoiceMessage
-{
-	Q_OBJECT
-	public:
-		virtual ~VshlCpbltsVoiceMessage() {};
-		bool isAuthStateEvent() const override { return false; };
-		bool isConnectionStateEvent() const override { return false; };
-		bool isDialogStateEvent() const override { return false; };
-		bool createRequest(QString verb, QJsonObject parameter) override;
-
-	private:
-		QStringList verbs {
-			"guiMetadataSubscribe",
-			"guiMetadataPublish",
-			"phonecontrolSubscribe",
-			"phonecontrolPublish",
-			"navigationSubscribe",
-			"navigationPublish",
-			"playbackControllerSubscribe",
-			"playbackControllerPublish",
-		};
-		QStringList events {
-			"voice_authstate_event",
-			"voice_dialogstate_event",
-			"voice_connectionstate_event",
-		};
-};
-
-/* We shouldnt access an agent directly, but CBL events
- * are not abstracted/forwarded by vshl bindings.
- */
-class AlexaVoiceMessage : public VoiceMessage
-{
-	Q_OBJECT
-	public:
-		virtual ~AlexaVoiceMessage() {};
-		bool isAuthStateEvent() const override {
-			return (events.contains(this->eventName())); };
-		bool isConnectionStateEvent() const override { return false; };
-		bool isDialogStateEvent() const override { return false; };
-		bool createRequest(QString verb, QJsonObject parameter) override;
-
-	private:
-		QStringList verbs {
-			"subscribeToCBLEvents",
-		};
-		QStringList events {
 			"voice_cbl_codepair_received_event",
 			"voice_cbl_codepair_expired_event",
 		};
 };
+
 
 #endif // VOICE_MESSAGE_H
