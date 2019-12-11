@@ -44,7 +44,16 @@ class SignalComposer : public QObject
         const QStringList events {
             "event.vehicle.speed",
             "event.engine.speed",
-        };
+            "event.cruise.enable",
+            "event.cruise.resume",
+            "event.cruise.set",
+            "event.cruise.cancel",
+            "event.cruise.limit",
+            "event.cruise.distance",
+            "event.lane_departure_warning.enable",
+            "event.info",
+            "event.horn"
+    };
 };
 
 #endif // SIGNALCOMPOSER_H
