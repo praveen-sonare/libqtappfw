@@ -48,7 +48,7 @@ class Voice : public QObject
 
 		void subscribeAgentToVshlEvents(QString id);
 		void unsubscribeAgentFromVshlEvents(QString id);
-		void subscribeAgentToLoginEvents(QString id);
+		void triggerCBLProcess(QString id);
 		void parseAgentsList(QJsonArray agents);
 		void processVshlEvent(VoiceMessage *vmsg);
 		void processLoginEvent(VoiceMessage *vmsg);
@@ -65,8 +65,6 @@ class Voice : public QObject
 			"voice_authstate_event",
 			"voice_dialogstate_event",
 			"voice_connectionstate_event",
-		};
-		const QStringList login_events {
 			"voice_cbl_codepair_received_event",
 			"voice_cbl_codepair_expired_event",
 		};

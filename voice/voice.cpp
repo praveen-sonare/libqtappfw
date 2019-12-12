@@ -45,7 +45,7 @@ Voice::~Voice()
 
 void Voice::scan()
 {
-    VoiceMessage *vmsg = new VoiceMessage();
+	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	vmsg->createRequest("enumerateVoiceAgents", parameter);
@@ -55,13 +55,13 @@ void Voice::scan()
 
 void Voice::getCBLpair(QString id)
 {
-	subscribeAgentToLoginEvents(id);
+    triggerCBLProcess(id);
 }
 
 void Voice::subscribeAgentToVshlEvents(QString id)
 {
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-    VoiceMessage *vmsg = new VoiceMessage();
+	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
@@ -74,7 +74,7 @@ void Voice::subscribeAgentToVshlEvents(QString id)
 void Voice::unsubscribeAgentFromVshlEvents(QString id)
 {
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-        VoiceMessage *vmsg = new VoiceMessage();
+	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
@@ -84,18 +84,15 @@ void Voice::unsubscribeAgentFromVshlEvents(QString id)
 	delete vmsg;
 }
 
-void Voice::subscribeAgentToLoginEvents(QString id)
+void Voice::triggerCBLProcess(QString id)
 {
-	QJsonArray events = QJsonArray::fromStringList(login_events);
-        VoiceMessage *vmsg = new VoiceMessage();
+	QJsonArray events;
+	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
 	parameter.insert("events", events);
 	vmsg->createRequest("subscribeToLoginEvents", parameter);
-        m_loop->sendMessage(vmsg);
-        //subscribe to events from vshl:
-        vmsg->createRequest("subscribe", parameter);
 	m_loop->sendMessage(vmsg);
 	delete vmsg;
 }
@@ -125,7 +122,7 @@ void Voice::processVshlEvent(VoiceMessage *vmsg)
 	}
 	if (vmsg->isAuthStateEvent()) {
 		const QString authstate = obj.value("state").toString();
-		if (!authstate.isEmpty()) 
+		if (!authstate.isEmpty())
 			m_var->setAuthState(
 				agentId,
 				static_cast<VoiceAgentRegistry::ServiceAuthState>(
