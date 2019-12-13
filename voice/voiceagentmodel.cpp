@@ -73,8 +73,8 @@ QVariantList VoiceAgentModel::readLoginParams(const QModelIndex &index) const
 		return ret;
 
 	const VoiceAgentProfile *vap = this->m_agents[index.row()];
-	ret.append(vap->loginurl());
 	ret.append(vap->logincode());
+	ret.append(vap->loginurl());
 	ret.append(vap->isloginpairexpired()? "expired" : "valid");
 	return ret;
 }
@@ -162,6 +162,39 @@ void VoiceAgentModel::updateAgentProperties(QString name, QString id, QString ap
 		vap->setWuw(wuw);
 		vroles.push_back(WuwRole);
 	}
+	if (!vroles.isEmpty())
+	emit dataChanged(indexOf(vap), indexOf(vap), vroles);
+}
+
+void VoiceAgentModel::updateAgentState(QString id)
+{
+	QVector<int> vroles;
+	VoiceAgentProfile *vap = getAgentFromId(id);
+
+	if (!vap) {
+		qWarning() << "Unknown agent";
+		return;
+	}
+
+	vroles.push_back(AuthStateRole);
+	vroles.push_back(ConnStateRole);
+	vroles.push_back(DialogStateRole);
+
+	if (!vroles.isEmpty())
+		emit dataChanged(indexOf(vap), indexOf(vap), vroles);
+}
+
+void VoiceAgentModel::updateAgentLoginData(QString id)
+{
+	QVector<int> vroles;
+	VoiceAgentProfile *vap = getAgentFromId(id);
+
+	if (!vap) {
+		qWarning() << "Unknown agent";
+		return;
+	}
+
+	vroles.push_back(LoginParamsRole);
 	if (!vroles.isEmpty())
 		emit dataChanged(indexOf(vap), indexOf(vap), vroles);
 }

@@ -49,7 +49,7 @@ class VoiceAgentRegistry : public QObject
 		Q_ENUM(VoiceDialogState)
 
 		enum ServiceAuthState {
-			UNITIALIZED = 0,
+			UNINITIALIZED = 0,
 			REFRESHED,
 		};
 		Q_ENUM(ServiceAuthState)

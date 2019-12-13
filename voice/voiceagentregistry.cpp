@@ -99,29 +99,37 @@ void VoiceAgentRegistry::setDefaultId(QString id)
 
 void VoiceAgentRegistry::setAuthState(QString id, ServiceAuthState state)
 {
-	const auto stateStr =
-		QMetaEnum::fromType<VoiceAgentRegistry::ServiceAuthState>().valueToKey(state);
+	QMetaEnum metaEnum = QMetaEnum::fromType<VoiceAgentRegistry::ServiceAuthState>();
+	auto stateStr = metaEnum.valueToKey(state);
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-    if (vap)
+	if (vap) {
 		vap->setAuthState(stateStr);
+		m_model->updateAgentState(id);
+	}
 }
 
 void VoiceAgentRegistry::setConnectionState(QString id, AgentConnectionState state)
 {
-	const auto stateStr =
-		QMetaEnum::fromType<VoiceAgentRegistry::AgentConnectionState>().valueToKey(state);
+	QMetaEnum metaEnum = QMetaEnum::fromType<VoiceAgentRegistry::AgentConnectionState>();
+	auto stateStr = metaEnum.valueToKey(state);
+
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-    if (vap)
+	if (vap) {
 		vap->setConnState(stateStr);
+		m_model->updateAgentState(id);
+	}
 }
 
 void VoiceAgentRegistry::setDialogState(QString id, VoiceDialogState state)
 {
-	const auto stateStr =
-	QMetaEnum::fromType<VoiceAgentRegistry::VoiceDialogState>().valueToKey(state);
+	QMetaEnum metaEnum = QMetaEnum::fromType<VoiceAgentRegistry::VoiceDialogState>();
+	auto stateStr = metaEnum.valueToKey(state);
+
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
-    if (vap)
+	if (vap) {
 		vap->setDialogState(stateStr);
+	m_model->updateAgentState(id);
+	}
 }
 
 void VoiceAgentRegistry::updateLoginData(QString id, QString code, QString url,
@@ -129,17 +137,18 @@ void VoiceAgentRegistry::updateLoginData(QString id, QString code, QString url,
 {
 	VoiceAgentProfile *vap = m_model->getAgentFromId(id);
 	if (vap) {
-		vap->setLoginCode(code);
+		vap->setLoginCode(url);
 		vap->setLoginUrl(code);
 		vap->setLoginPairExpired(expired);
+		m_model->updateAgentLoginData(id);
 	};
 }
 
 int VoiceAgentRegistry::stringToEnum(const QString key, const QString enumtype)
 {
 	const QMetaObject *metaObject = VoiceAgentRegistry::metaObject();
-	int enumIndex = metaObject->indexOfEnumerator(enumtype.toUtf8().data());
+	int enumIndex = metaObject->indexOfEnumerator(enumtype.toUtf8().constData());
 	QMetaEnum metaEnum = metaObject->enumerator(enumIndex);
-	int value = metaEnum.keyToValue(key.toUtf8().data());
+	int value = metaEnum.keyToValue(key.toUtf8().constData());
 	return (value < 0)? 0 : value;
 }

@@ -54,6 +54,8 @@ class VoiceAgentModel : public QAbstractListModel
 		VoiceAgentProfile *getAgentFromId(QString id) const;
 		void updateAgentProperties(QString name, QString id,
 					   QString api, bool active, QString wuw);
+		void updateAgentState(QString id);
+		void updateAgentLoginData(QString id);
 
 	private:
 		QList<VoiceAgentProfile *> m_agents;
