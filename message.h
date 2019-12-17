@@ -56,7 +56,7 @@ class Message : public QObject
 		Message();
 
 		bool fromJson(QByteArray jsonData);
-		bool fromJDoc(QJsonDocument jdocData);
+		virtual bool fromJDoc(QJsonDocument jdocData);
 		QByteArray toJson(QJsonDocument::JsonFormat format = QJsonDocument::Compact);
 		bool createRequest(QString api, QString verb, QJsonValue parameter = "None");
 		inline QString eventApi() const

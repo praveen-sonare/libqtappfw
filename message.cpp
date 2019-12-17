@@ -114,13 +114,7 @@ bool Message::fromJDoc(QJsonDocument jdoc)
 	} else if (msgid == Event) {
 		// If event, save data object
 		auto data_iter = payload.find("data");
-		auto data = data_iter.value().toObject();
-		auto data_string = data_iter.value().toString();
-		if (!data_string.isEmpty())
-			data_string.remove('\n');
-
-		QJsonDocument datadoc = QJsonDocument::fromJson(data_string.toUtf8());
-		m_event_data = datadoc.object();
+		m_event_data = data_iter.value().toObject();
 
 		auto event_iter = payload.find("event");
 		auto event_string = event_iter.value().toString();
