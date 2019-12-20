@@ -26,6 +26,7 @@
 #include "responsemessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
+#include "voicemessage.h"
 #include "signalcomposermessage.h"
 
 #include <QJsonArray>
@@ -84,6 +85,7 @@ void MessageEngine::onDisconnected()
 
 void MessageEngine::onTextMessageReceived(QString jsonStr)
 {
+	jsonStr = jsonStr.simplified();
 	QJsonDocument jdoc(QJsonDocument::fromJson(jsonStr.toUtf8()));
 	if (jdoc.isEmpty()) {
 		qWarning() << "Received invalid JSON: empty appfw message";
@@ -138,6 +140,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "bluetooth-map") {
 			message = new MapMessage;
 			type = MapEventMessage;
+		} else if (api == "vshl-core" ) {
+			message = new VoiceMessage;
+			type = VoiceEventMessage;
 		} else if (api == "signal-composer") {
 			message = new SignalComposerMessage;
 			type = SignalComposerEventMessage;

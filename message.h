@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Konsulko Group
+ * Copyright (C) 2017, 2018, 2019 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ enum MessageType {
 	RadioEventMessage,
 	MapEventMessage,
 	NavigationEventMessage,
+	VoiceEventMessage,
 	SignalComposerEventMessage,
 };
 
@@ -55,7 +56,7 @@ class Message : public QObject
 		Message();
 
 		bool fromJson(QByteArray jsonData);
-		bool fromJDoc(QJsonDocument jdocData);
+		virtual bool fromJDoc(QJsonDocument jdocData);
 		QByteArray toJson(QJsonDocument::JsonFormat format = QJsonDocument::Compact);
 		bool createRequest(QString api, QString verb, QJsonValue parameter = "None");
 		inline QString eventApi() const
@@ -88,17 +89,17 @@ class Message : public QObject
 			return m_reply_data;
 		}
 
- 		inline bool isEvent() const
+		inline bool isEvent() const
 		{
 			return m_event;
 		}
 
- 		inline bool isReply() const
+		inline bool isReply() const
 		{
 			return m_reply;
 		}
 
- 		inline bool isValid() const
+		inline bool isValid() const
 		{
 			return m_init;
 		}
