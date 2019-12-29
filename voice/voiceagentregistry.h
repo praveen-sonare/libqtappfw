@@ -51,6 +51,8 @@ class VoiceAgentRegistry : public QObject
 		enum ServiceAuthState {
 			UNINITIALIZED = 0,
 			REFRESHED,
+			EXPIRED,
+			UNRECOVERABLE_ERROR
 		};
 		Q_ENUM(ServiceAuthState)
 
