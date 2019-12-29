@@ -38,6 +38,7 @@ class VoiceAgentModel : public QAbstractListModel
 			DialogStateRole,
 			LoginParamsRole,
 			ActiveRole,
+			VendorRole,
 		};
 
 		VoiceAgentModel(QObject *parent = Q_NULLPTR);

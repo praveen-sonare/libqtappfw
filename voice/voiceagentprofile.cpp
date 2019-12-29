@@ -25,7 +25,7 @@ VoiceAgentProfile::VoiceAgentProfile(const QString &name,
 				     const QString &wuws)
 	: m_name(name), m_vaid(id), m_vaapi(api), m_active(active),
 	  m_activewuw(wuw), m_vendor(vendor), m_wuws(wuws),
-	  m_authstate("UNITIALIZED"), m_connstate("DISCONNECTED"),
+	  m_authstate("UNINITIALIZED"), m_connstate("DISCONNECTED"),
 	  m_dialogstate("MICROPHONEOFF"), m_logincode(QString()),
 	  m_loginurl(QString()), m_expired(true)
 {
