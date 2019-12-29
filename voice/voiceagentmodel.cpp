@@ -52,6 +52,8 @@ QVariant VoiceAgentModel::data(const QModelIndex &index, int role) const
 			return readLoginParams(index);
 		case ActiveRole:
 			return vap->isactive()? "active" : "inactive";
+		case VendorRole:
+			return vap->vendor();
 	}
 	return ret;
 }
@@ -216,5 +218,6 @@ QHash<int, QByteArray> VoiceAgentModel::roleNames() const
 	roles[DialogStateRole] = "dialogstate";
 	roles[LoginParamsRole] = "usrauth";
 	roles[ActiveRole] = "active";
+	roles[VendorRole] = "vendor";
 	return roles;
 }
