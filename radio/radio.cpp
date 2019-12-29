@@ -25,6 +25,8 @@ Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
     m_mloop(nullptr),
     m_band(1),
     m_frequency(0),
+    m_minFrequency(0),
+    m_maxFrequency(0),
     m_playing(false),
     m_scanning(false)
 {
