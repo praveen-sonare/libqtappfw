@@ -24,7 +24,6 @@ class VoiceMessage : public Message
 	Q_OBJECT
 	public:
 		virtual ~VoiceMessage() {};
-		bool fromJDoc(QJsonDocument jdocData) override;
 
 		bool isAuthStateEvent() const {
 			return (this->eventName().contains("voice_authstate_event")); };

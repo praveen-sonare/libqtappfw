@@ -55,7 +55,7 @@ void Voice::scan()
 
 void Voice::getCBLpair(QString id)
 {
-    triggerCBLProcess(id);
+	triggerCBLProcess(id);
 }
 
 void Voice::subscribeAgentToVshlEvents(QString id)
@@ -138,23 +138,15 @@ void Voice::processEvent(VoiceMessage *vmsg)
 		return;
 	}
 	else if (vmsg->isCblEvent()) {
-		auto payload_iter = data.find("payload");
-		if (payload_iter == data.end())
-			qWarning() << "no top-level payload field in event";
-		auto payload_stringval = payload_iter.value().toString();
-		if (!payload_stringval.isEmpty())
-			payload_stringval.remove('\n');
-		QJsonDocument infodoc = QJsonDocument::fromJson(payload_stringval.toUtf8());
-		QJsonObject info = infodoc.object();
-		QJsonObject properties = info.value("payload").toObject();
-		QString url = properties.value("url").toString();
-		QString code = properties.value("code").toString();
+		QJsonObject payload = data.value("payload").toObject();
+		QString url = payload.value("url").toString();
+		QString code = payload.value("code").toString();
 		if (str.contains("expired"))
 			m_var->updateLoginData(agentId, code, url, true);
 		else if (str.contains("received")) {
 			m_var->updateLoginData(agentId, code, url, false);
 		} else
-			qWarning() << "unknown cbl event";
+			qWarning() << "Unknown cbl event";
 		return;
 	}
 
@@ -170,8 +162,8 @@ void Voice::processReply(ResponseMessage *rmsg)
 		m_var->setDefaultId(
 				rmsg->replyData().value("default").toString());
 	} else
-		qWarning() << "discarding reply received for verb:" <<
-							rmsg->requestVerb();
+		qDebug() << "discarding reply received for verb:" <<
+			rmsg->requestVerb();
 }
 
 void Voice::onConnected()
