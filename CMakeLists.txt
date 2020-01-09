@@ -48,6 +48,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtappfw.pc
 set (SUBDIRS
 	docs
 	bluetooth
+	hvac
 	map
 	mediaplayer
 	navigation

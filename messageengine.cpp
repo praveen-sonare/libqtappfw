@@ -18,6 +18,7 @@
 #include "messageengine.h"
 #include "bluetoothmessage.h"
 #include "guimetadatamessage.h"
+#include "hvacmessage.h"
 #include "mapmessage.h"
 #include "mediaplayermessage.h"
 #include "navigationmessage.h"
@@ -153,6 +154,9 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "signal-composer") {
 			message = new SignalComposerMessage;
 			type = SignalComposerEventMessage;
+		} else if (api == "hvac") {
+			message = new HVACMessage;
+			type = HVACEventMessage;
 		} else {
 			message = new Message;
 			type = GenericMessage;
