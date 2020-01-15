@@ -57,6 +57,7 @@ set (SUBDIRS
 	signal-composer
 	telephony
 	voice
+	voice-capabilities
 	weather)
 
 add_headers(message.h messageengine.h responsemessage.h)

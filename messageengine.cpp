@@ -17,6 +17,7 @@
 #include "message.h"
 #include "messageengine.h"
 #include "bluetoothmessage.h"
+#include "guimetadatamessage.h"
 #include "mapmessage.h"
 #include "mediaplayermessage.h"
 #include "navigationmessage.h"
@@ -24,10 +25,10 @@
 #include "pbapmessage.h"
 #include "radiomessage.h"
 #include "responsemessage.h"
+#include "signalcomposermessage.h"
 #include "telephonymessage.h"
 #include "weathermessage.h"
 #include "voicemessage.h"
-#include "signalcomposermessage.h"
 
 #include <QJsonArray>
 
@@ -143,6 +144,12 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		} else if (api == "vshl-core" ) {
 			message = new VoiceMessage;
 			type = VoiceEventMessage;
+		} else if (api == "vshl-capabilities" ) {
+			// NOTE: Will need to look at event name to differentiate
+			//       capabilities if more support (e.g. navigation or
+			//       local media control) is added.
+			message = new GuiMetadataCapabilityMessage;
+			type = GuiMetadataCapabilityEventMessage;
 		} else if (api == "signal-composer") {
 			message = new SignalComposerMessage;
 			type = SignalComposerEventMessage;
