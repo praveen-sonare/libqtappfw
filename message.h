@@ -44,6 +44,7 @@ enum MessageType {
 	NavigationEventMessage,
 	VoiceEventMessage,
 	SignalComposerEventMessage,
+	GuiMetadataCapabilityEventMessage,
 };
 
 class Message : public QObject
