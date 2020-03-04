@@ -17,11 +17,13 @@
 #ifndef GUIMETADATA_H
 #define GUIMETADATA_H
 
-#include <QDebug>
 #include <QObject>
-
 #include <QtQml/QQmlContext>
-#include "messageengine.h"
+
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class GuiMetadata : public QObject
 {

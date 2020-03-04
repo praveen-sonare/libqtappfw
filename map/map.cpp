@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019, 2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
-#include "messageengine.h"
-#include "map.h"
 #include "mapmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "map.h"
 
 Map::Map (QUrl &url, QObject * parent) :
     QObject(parent),
@@ -90,13 +92,13 @@ void Map::onDisconnected()
 
 void Map::onMessageReceived(MessageType type, Message *msg)
 {
-    if (type == MapEventMessage) {
+    if (type == MessageType::MapEventMessage) {
         MapMessage *tmsg = qobject_cast<MapMessage*>(msg);
 
         if (tmsg->isNotificationEvent()) {
             emit notificationEvent(tmsg->eventData().toVariantMap());
         }
-    } else if (msg->isReply() && type == ResponseRequestMessage) {
+    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (tmsg->requestVerb() == "list_messages") {

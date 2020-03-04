@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@
 #ifndef RADIO_H
 #define RADIO_H
 
-#include <QDebug>
 #include <QObject>
-
 #include <QtQml/QQmlContext>
-#include "messageengine.h"
+
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class Radio : public QObject
 {

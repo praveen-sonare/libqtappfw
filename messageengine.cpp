@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Konsulko Group
+ * Copyright (C) 2017-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	case RetErr: {
 		auto callid = msg[1].toString().toInt();
 		message = new ResponseMessage(m_calls[callid]);
-		type = ResponseRequestMessage;
+		type = MessageType::ResponseRequestMessage;
 		m_calls.remove(callid);
 		break;
 	}
@@ -117,49 +117,49 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		// parser parameter to remove API specific handling here
 		if (api == "bluetooth-manager") {
 			message = new BluetoothMessage;
-			type = BluetoothEventMessage;
+			type = MessageType::BluetoothEventMessage;
 		} else if (api == "bluetooth-pbap") {
 			message = new PbapMessage;
-			type = PbapEventMessage;
+			type = MessageType::PbapEventMessage;
 		} else if (api == "telephony") {
 			message = new TelephonyMessage;
-			type = TelephonyEventMessage;
+			type = MessageType::TelephonyEventMessage;
 		} else if (api == "weather") {
 			message = new WeatherMessage;
-			type = WeatherEventMessage;
+			type = MessageType::WeatherEventMessage;
 		} else if (api == "mediaplayer") {
 			message = new MediaplayerMessage;
-			type = MediaplayerEventMessage;
+			type = MessageType::MediaplayerEventMessage;
 		} else if (api == "navigation") {
 			message = new NavigationMessage;
-			type = NavigationEventMessage;
+			type = MessageType::NavigationEventMessage;
 		} else if (api == "network-manager") {
 			message = new NetworkMessage;
-			type = NetworkEventMessage;
+			type = MessageType::NetworkEventMessage;
 		} else if (api == "radio") {
 			message = new RadioMessage;
-			type = RadioEventMessage;
+			type = MessageType::RadioEventMessage;
 		} else if (api == "bluetooth-map") {
 			message = new MapMessage;
-			type = MapEventMessage;
+			type = MessageType::MapEventMessage;
 		} else if (api == "vshl-core" ) {
 			message = new VoiceMessage;
-			type = VoiceEventMessage;
+			type = MessageType::VoiceEventMessage;
 		} else if (api == "vshl-capabilities" ) {
 			// NOTE: Will need to look at event name to differentiate
 			//       capabilities if more support (e.g. navigation or
 			//       local media control) is added.
 			message = new GuiMetadataCapabilityMessage;
-			type = GuiMetadataCapabilityEventMessage;
+			type = MessageType::GuiMetadataCapabilityEventMessage;
 		} else if (api == "signal-composer") {
 			message = new SignalComposerMessage;
-			type = SignalComposerEventMessage;
+			type = MessageType::SignalComposerEventMessage;
 		} else if (api == "hvac") {
 			message = new HVACMessage;
-			type = HVACEventMessage;
+			type = MessageType::HVACEventMessage;
 		} else {
 			message = new Message;
-			type = GenericMessage;
+			type = MessageType::GenericMessage;
 		}
 		break;
 	}

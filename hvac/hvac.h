@@ -17,13 +17,15 @@
 #ifndef HVAC_H
 #define HVAC_H
 
-#include <QDebug>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
-#include "messageengine.h"
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class HVAC : public QObject
 {

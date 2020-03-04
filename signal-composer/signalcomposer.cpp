@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
+#include "signalcomposermessage.h"
 #include "messageengine.h"
 #include "signalcomposer.h"
-#include "signalcomposermessage.h"
+
 
 SignalComposer::SignalComposer (QUrl &url, QObject * parent) :
     QObject(parent),
@@ -66,7 +69,7 @@ void SignalComposer::onDisconnected()
 
 void SignalComposer::onMessageReceived(MessageType type, Message *message)
 {
-    if (type == SignalComposerEventMessage) {
+    if (type == MessageType::SignalComposerEventMessage) {
         SignalComposerMessage *tmsg = qobject_cast<SignalComposerMessage*>(message);
 
         if (tmsg->isEvent()) {

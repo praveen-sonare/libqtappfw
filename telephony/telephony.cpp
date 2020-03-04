@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Konsulko Group
+ * Copyright (C) 2017-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
+#include "telephonymessage.h"
 #include "messageengine.h"
 #include "telephony.h"
-#include "telephonymessage.h"
+
 
 Telephony::Telephony (QUrl &url, QObject * parent) :
 	QObject(parent),
@@ -88,7 +91,7 @@ void Telephony::onDisconnected()
 
 void Telephony::onMessageReceived(MessageType type, Message *message)
 {
-	if (type == TelephonyEventMessage) {
+    if (type == MessageType::TelephonyEventMessage) {
 		TelephonyMessage *tmsg = qobject_cast<TelephonyMessage*>(message);
 
 		if (tmsg->isEvent()) {

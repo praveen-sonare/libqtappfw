@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#include <QDebug>
 #include <QtQml/QQmlEngine>
 
 #include "message.h"
-#include "messageengine.h"
-#include "network.h"
 #include "networkmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
 #include "networkadapter.h"
+#include "network.h"
+
 
 Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
@@ -313,9 +315,9 @@ void Network::processReply(ResponseMessage *rmsg)
 
 void Network::onMessageReceived(MessageType type, Message *msg)
 {
-    if (msg->isEvent() && (type == NetworkEventMessage)) {
+    if (msg->isEvent() && (type == MessageType::NetworkEventMessage)) {
         processEvent(qobject_cast<NetworkMessage*>(msg));
-    } else if (msg->isReply() && (type == ResponseRequestMessage)) {
+    } else if (msg->isReply() && (type == MessageType::ResponseRequestMessage)) {
         processReply(qobject_cast<ResponseMessage*>(msg));
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
-#include "messageengine.h"
-#include "bluetooth.h"
 #include "bluetoothmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "bluetoothmodel.h"
+#include "bluetooth.h"
+
+
 
 Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
@@ -258,7 +263,7 @@ void Bluetooth::processAdapterChangesEvent(QJsonObject data)
 
 void Bluetooth::onMessageReceived(MessageType type, Message *msg)
 {
-    if (msg->isEvent() && type == BluetoothEventMessage) {
+    if (msg->isEvent() && type == MessageType::BluetoothEventMessage) {
         BluetoothMessage *tmsg = qobject_cast<BluetoothMessage*>(msg);
 
         if (tmsg->isDeviceChangesEvent()) {
@@ -269,7 +274,7 @@ void Bluetooth::onMessageReceived(MessageType type, Message *msg)
             emit requestConfirmationEvent(tmsg->eventData());
         }
 
-    } else if (msg->isReply() && type == ResponseRequestMessage) {
+    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (tmsg->requestVerb() == "managed_objects") {

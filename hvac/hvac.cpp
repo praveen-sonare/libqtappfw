@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+#include <QDebug>
 #include <QMetaEnum>
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
 #include "message.h"
-#include "messageengine.h"
-#include "hvac.h"
 #include "hvacmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "hvac.h"
+
 
 // TODO: don't duplicate defaults from HVAC service here
 HVAC::HVAC (QUrl &url, QObject * parent) :
@@ -75,7 +77,7 @@ void HVAC::set_temp_right_zone(int temp)
 
 void HVAC::onMessageReceived(MessageType type, Message *msg)
 {
-    if (msg->isEvent() && type == HVACEventMessage) {
+    if (msg->isEvent() && type == MessageType::HVACEventMessage) {
         HVACMessage *tmsg = qobject_cast<HVACMessage*>(msg);
 
         if (tmsg->isLanguageEvent()) {

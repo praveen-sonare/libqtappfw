@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019, 2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,15 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <QDebug>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
-#include "messageengine.h"
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class Map : public QObject
 {

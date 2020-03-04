@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+#include <QDebug>
 #include <QMetaEnum>
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
 #include "message.h"
-#include "messageengine.h"
-#include "pbap.h"
 #include "pbapmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "pbap.h"
+
 
 PhoneNumber::PhoneNumber(QString number, QString type)
 {
@@ -280,7 +282,7 @@ void Pbap::onDisconnected()
 
 void Pbap::onMessageReceived(MessageType type, Message *msg)
 {
-    if (msg->isEvent() && type == PbapEventMessage) {
+    if (msg->isEvent() && type == MessageType::PbapEventMessage) {
         PbapMessage *tmsg = qobject_cast<PbapMessage*>(msg);
 
         if (tmsg->isStatusEvent()) {
@@ -289,7 +291,7 @@ void Pbap::onMessageReceived(MessageType type, Message *msg)
                 refreshContacts(-1);
             }
         }
-    } else if (msg->isReply() && type == ResponseRequestMessage) {
+    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
         ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (tmsg->requestVerb() == "contacts" || tmsg->requestVerb() == "import") {

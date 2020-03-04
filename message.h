@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018, 2019 Konsulko Group
+ * Copyright (C) 2017-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ enum MessageId {
 	Event = 5,
 };
 
-enum MessageType {
+enum class MessageType {
 	GenericMessage,
 	ResponseRequestMessage,
 	TelephonyEventMessage,
@@ -52,7 +52,6 @@ class Message : public QObject
 {
 	Q_OBJECT
 	Q_ENUM(MessageId)
-	Q_ENUM(MessageType)
 
 	public:
 		Message();

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+#include <QJsonArray>
+
 #include "message.h"
+#include "guimetadatamessage.h"
 #include "messageengine.h"
 #include "guimetadata.h"
-#include "guimetadatamessage.h"
-
-#include <QJsonArray>
 
 GuiMetadata::GuiMetadata(QUrl &url, QQmlContext *context, QObject * parent) :
 	QObject(parent),
@@ -329,7 +330,7 @@ void GuiMetadata::onDisconnected()
 
 void GuiMetadata::onMessageReceived(MessageType type, Message *message)
 {
-	if (type == GuiMetadataCapabilityEventMessage) {
+	if (type == MessageType::GuiMetadataCapabilityEventMessage) {
 		GuiMetadataCapabilityMessage *tmsg = qobject_cast<GuiMetadataCapabilityMessage*>(message);
 		if (tmsg->isEvent()) {
 			if (tmsg->isGuiMetadataRenderTemplateEvent()) {

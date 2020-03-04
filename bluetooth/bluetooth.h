@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,16 @@
 #ifndef BLUETOOTH_H
 #define BLUETOOTH_H
 
-#include <QDebug>
 #include <QObject>
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QtQml/QQmlContext>
 
-#include "messageengine.h"
-#include "bluetoothmodel.h"
+class BluetoothModel;
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class Bluetooth : public QObject
 {

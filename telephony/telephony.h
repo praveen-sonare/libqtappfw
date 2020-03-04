@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Konsulko Group
+ * Copyright (C) 2017-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 #ifndef TELEPHONY_H
 #define TELEPHONY_H
 
-#include <QDebug>
 #include <QObject>
 
-#include "messageengine.h"
+class MessageEngine;
+class Message;
+
+enum class MessageType;
 
 class Telephony : public QObject
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019, 2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
-#include "messageengine.h"
-#include "navigation.h"
 #include "navigationmessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "navigation.h"
+
 
 Navigation::Navigation (QUrl &url, QObject * parent) :
     QObject(parent),
@@ -123,7 +126,7 @@ void Navigation::onDisconnected()
 
 void Navigation::onMessageReceived(MessageType type, Message *msg)
 {
-    if (type == NavigationEventMessage) {
+    if (type == MessageType::NavigationEventMessage) {
         NavigationMessage *tmsg = qobject_cast<NavigationMessage*>(msg);
 
         if (tmsg->isPositionEvent()) {

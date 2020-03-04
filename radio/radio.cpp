@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
-#include "messageengine.h"
-#include "radio.h"
 #include "radiomessage.h"
 #include "responsemessage.h"
+#include "messageengine.h"
+#include "radio.h"
+
 
 Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
@@ -200,7 +203,7 @@ void Radio::onDisconnected()
 
 void Radio::onMessageReceived(MessageType type, Message *msg)
 {
-    if (msg->isEvent() && type == RadioEventMessage) {
+    if (msg->isEvent() && type == MessageType::RadioEventMessage) {
         RadioMessage *rmsg = qobject_cast<RadioMessage*>(msg);
 
         if (rmsg->isFrequencyEvent()) {
@@ -224,7 +227,7 @@ void Radio::onMessageReceived(MessageType type, Message *msg)
                 emit playingChanged(m_playing);
             }
         }
-    } else if (msg->isReply() && type == ResponseRequestMessage) {
+    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
         ResponseMessage *rmsg = qobject_cast<ResponseMessage*>(msg);
 
         if (rmsg->requestVerb() == "frequency_range") {

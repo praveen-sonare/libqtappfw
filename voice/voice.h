@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019, 2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 #ifndef VOICE_H
 #define VOICE_H
 
-#include <QDebug>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
-#include "message.h"
 
+class VoiceAgentRegistry;
 class MessageEngine;
+class Message;
 class ResponseMessage;
 class VoiceMessage;
-class VoiceAgentRegistry;
+
+enum class MessageType;
 
 class Voice : public QObject
 {

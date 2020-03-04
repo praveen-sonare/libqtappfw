@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019, 2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <QDebug>
 #include <QStringList>
-#include "voice.h"
+
 #include "message.h"
-#include "messageengine.h"
 #include "responsemessage.h"
 #include "voicemessage.h"
+#include "messageengine.h"
 #include "voiceagentregistry.h"
+#include "voice.h"
 
 Voice::Voice (QUrl &url, QQmlContext *context, QObject *parent) :
 	QObject(parent),
@@ -181,11 +182,11 @@ void Voice::onDisconnected()
 
 void Voice::onMessageReceived(MessageType type, Message *msg)
 {
-	if (msg->isEvent() && type == VoiceEventMessage) {
+	if (msg->isEvent() && type == MessageType::VoiceEventMessage) {
 		processEvent(qobject_cast<VoiceMessage*>(msg));
-	} else if (msg->isReply() && (type == ResponseRequestMessage)) {
+	} else if (msg->isReply() && (type == MessageType::ResponseRequestMessage)) {
 		processReply(qobject_cast<ResponseMessage*>(msg));
 	} else
-		qWarning() << "Received unknown message type:" << type;
+	  qWarning() << "Received unknown message type:" << static_cast<double>(type);
 	msg->deleteLater();
 }

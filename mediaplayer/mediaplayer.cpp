@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include <QDebug>
+
 #include "message.h"
+#include "mediaplayermessage.h"
 #include "messageengine.h"
 #include "mediaplayer.h"
-#include "mediaplayermessage.h"
+
 
 Playlist::Playlist(QVariantMap &item)
 {
@@ -212,8 +215,9 @@ void Mediaplayer::onDisconnected()
 
 void Mediaplayer::onMessageReceived(MessageType type, Message *message)
 {
-    if (type == MediaplayerEventMessage) {
-        MediaplayerMessage *tmsg = qobject_cast<MediaplayerMessage*>(message);
+    if (type == MessageType::MediaplayerEventMessage) {
+        MediaplayerMessage *tmsg =
+	    qobject_cast<MediaplayerMessage*>(message);
 
         if (tmsg->isEvent()) {
             if (tmsg->isPlaylistEvent()) {
