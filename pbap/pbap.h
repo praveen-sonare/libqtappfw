@@ -17,6 +17,7 @@
 #ifndef PBAP_H
 #define PBAP_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
@@ -24,8 +25,6 @@
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class PhoneNumber : public QObject
 {
@@ -169,7 +168,7 @@ class Pbap : public QObject
         // slots
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 
         const QStringList events {
             "status",

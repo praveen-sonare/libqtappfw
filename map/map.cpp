@@ -16,9 +16,10 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "mapmessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
 #include "responsemessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "map.h"
 
@@ -39,77 +40,76 @@ Map::~Map()
 
 void Map::compose(QString recipient, QString message)
 {
-    MapMessage *tmsg = new MapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("recipient", recipient);
     parameter.insert("message", message);
-    tmsg->createRequest("compose", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    btmsg->createRequest("bluetooth-map", "compose", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Map::message(QString handle)
 {
-    MapMessage *tmsg = new MapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("handle", handle);
-    tmsg->createRequest("message", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    btmsg->createRequest("bluetooth-map", "message", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Map::listMessages(QString folder)
 {
-    MapMessage *tmsg = new MapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("folder", folder);
-    tmsg->createRequest("list_messages", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    btmsg->createRequest("bluetooth-map", "list_messages", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Map::onConnected()
 {
-    MapMessage *tmsg = new MapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("value", "notification");
-    tmsg->createRequest("subscribe", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    btmsg->createRequest("bluetooth-map", "subscribe", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
     listMessages();
 }
 
 void Map::onDisconnected()
 {
-    MapMessage *tmsg = new MapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("value", "notification");
-    tmsg->createRequest("unsubscribe", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    btmsg->createRequest("bluetooth-map", "unsubscribe", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
-void Map::onMessageReceived(MessageType type, Message *msg)
+void Map::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (type == MessageType::MapEventMessage) {
-        MapMessage *tmsg = qobject_cast<MapMessage*>(msg);
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> tmsg = std::static_pointer_cast<EventMessage>(msg);
 
-        if (tmsg->isNotificationEvent()) {
+        if (tmsg->eventApi() != "bluetooth-map")
+            return;
+        if (tmsg->eventName() == "notification") {
             emit notificationEvent(tmsg->eventData().toVariantMap());
         }
-    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
-        ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
-
-        if (tmsg->requestVerb() == "list_messages") {
-            QString folder = tmsg->requestParameters().value("folder").toString();
-            QVariantMap listing = tmsg->replyData().value("messages").toObject().toVariantMap();
+    } else if (msg->isReply()) {
+        auto rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+        if (rmsg->requestVerb() == "list_messages") {
+            QString folder = rmsg->requestParameters().value("folder").toString();
+            QVariantMap listing = rmsg->replyData().value("messages").toObject().toVariantMap();
             emit listMessagesResult(folder, listing);
-        } else if (tmsg->requestVerb() == "message") {
-            QString handle = tmsg->requestParameters().value("handle").toString();
-            emit messageResult(handle, tmsg->replyData().toVariantMap());
+        } else if (rmsg->requestVerb() == "message") {
+            QString handle = rmsg->requestParameters().value("handle").toString();
+            emit messageResult(handle, rmsg->replyData().toVariantMap());
         }
     }
-
-    msg->deleteLater();
 }

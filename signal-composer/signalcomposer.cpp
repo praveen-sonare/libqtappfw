@@ -16,8 +16,9 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "signalcomposermessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "signalcomposer.h"
 
@@ -40,56 +41,63 @@ SignalComposer::~SignalComposer()
 void SignalComposer::onConnected()
 {
     QStringListIterator eventIterator(events);
-    SignalComposerMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new SignalComposerMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* tmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("signal", eventIterator.next());
-        tmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        tmsg->createRequest("signal-composer", "subscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
 void SignalComposer::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    SignalComposerMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new SignalComposerMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* tmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("signal", eventIterator.next());
-        tmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        tmsg->createRequest("signal-composer", "unsubscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
-void SignalComposer::onMessageReceived(MessageType type, Message *message)
+void SignalComposer::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (type == MessageType::SignalComposerEventMessage) {
-        SignalComposerMessage *tmsg = qobject_cast<SignalComposerMessage*>(message);
+    if (!msg)
+        return;
 
-        if (tmsg->isEvent()) {
-            QString uid = tmsg->eventData().value("uid").toString();
-            QVariant v = tmsg->eventData().value("value").toVariant();
-            QString value;
-            if(v.canConvert(QMetaType::QString))
-                value = v.toString();
-            else
-                qWarning() << "Unconvertible value type for uid " << uid;
-            QString units = tmsg->eventData().value("unit").toString();
-	    v = tmsg->eventData().value("timestamp").toVariant();
-            quint64 timestamp = 0;
-            if(v.canConvert(QMetaType::ULongLong))
-                timestamp = v.toULongLong();
-            else
-                qWarning() << "Unconvertible timestamp type for uid " << uid;
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        if (emsg->eventApi() != "signal-composer")
+            return;
 
-            emit signalEvent(uid, value, units, timestamp);
-        }
+        QJsonObject data = emsg->eventData();
+        QString uid = data.value("uid").toString();
+        QVariant v = data.value("value").toVariant();
+        QString value;
+        if(v.canConvert(QMetaType::QString))
+            value = v.toString();
+        else
+            qWarning() << "Unconvertible value type for uid " << uid;
+        QString units = data.value("unit").toString();
+        v = data.value("timestamp").toVariant();
+        quint64 timestamp = 0;
+        if(v.canConvert(QMetaType::ULongLong))
+            timestamp = v.toULongLong();
+        else
+            qWarning() << "Unconvertible timestamp type for uid " << uid;
+
+        emit signalEvent(uid, value, units, timestamp);
     }
-    message->deleteLater();
 }

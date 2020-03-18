@@ -17,8 +17,9 @@
 #include <QDebug>
 #include <QJsonArray>
 
-#include "message.h"
-#include "weathermessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "weather.h"
 
@@ -40,32 +41,41 @@ Weather::~Weather()
 
 void Weather::onConnected()
 {
-	WeatherMessage *tmsg = new WeatherMessage();
-	tmsg->createRequest("subscribe", "weather");
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("weather", "subscribe", "weather");
+	m_mloop->sendMessage(std::move(msg));
 }
 
 void Weather::onDisconnected()
 {
-	WeatherMessage *tmsg = new WeatherMessage();
-	tmsg->createRequest("unsubscribe", "weather");
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("weater", "unsubscribe", "weather");
+	m_mloop->sendMessage(std::move(msg));
 }
 
-void Weather::onMessageReceived(MessageType type, Message *message)
+void Weather::onMessageReceived(std::shared_ptr<Message> msg)
 {
-	if (type == MessageType::WeatherEventMessage) {
-		WeatherMessage *tmsg = qobject_cast<WeatherMessage*>(message);
+	if (!msg)
+		return;
 
-		if (tmsg->isEvent()) {
-			m_temperature = tmsg->temperature();
-			m_condition = tmsg->condition();
+	if (msg->isEvent()) {
+		std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+		if (emsg->eventApi() != "weather")
+			return;
+
+		QJsonObject data = emsg->eventData();
+		m_temperature = QString::number(data.value("main").toObject().value("temp").toDouble());
+		m_condition = data.value("weather").toArray().at(0).toObject().value("description").toString();
 
 			emit temperatureChanged(m_temperature);
 			emit conditionChanged(m_condition);
 		}
-	}
-	message->deleteLater();
 }

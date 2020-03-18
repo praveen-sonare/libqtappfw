@@ -17,6 +17,7 @@
 #ifndef VOICE_H
 #define VOICE_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
@@ -24,10 +25,6 @@
 class VoiceAgentRegistry;
 class MessageEngine;
 class Message;
-class ResponseMessage;
-class VoiceMessage;
-
-enum class MessageType;
 
 class Voice : public QObject
 {
@@ -51,16 +48,16 @@ class Voice : public QObject
 		void unsubscribeAgentFromVshlEvents(QString id);
 		void triggerCBLProcess(QString id);
 		void parseAgentsList(QJsonArray agents);
-		void processVshlEvent(VoiceMessage *vmsg);
-		void processLoginEvent(VoiceMessage *vmsg);
+		void processVshlEvent(std::shared_ptr<Message> msg);
+		void processLoginEvent(std::shared_ptr<Message> msg);
 
-		void processEvent(VoiceMessage *vmsg);
-		void processReply(ResponseMessage *rmsg);
+		void processEvent(std::shared_ptr<Message> emsg);
+		void processReply(std::shared_ptr<Message> rmsg);
 
 		// slots
 		void onConnected();
 		void onDisconnected();
-		void onMessageReceived(MessageType type, Message *msg);
+		void onMessageReceived(std::shared_ptr<Message> msg);
 
 		const QStringList vshl_events {
 			"voice_authstate_event",

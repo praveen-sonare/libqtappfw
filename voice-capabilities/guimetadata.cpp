@@ -17,8 +17,9 @@
 #include <QDebug>
 #include <QJsonArray>
 
-#include "message.h"
-#include "guimetadatamessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "guimetadata.h"
 
@@ -308,19 +309,20 @@ bool GuiMetadata::updateWeatherMetadata(QJsonObject &data)
 
 void GuiMetadata::onConnected()
 {
-	QStringListIterator eventIterator(events);
-	GuiMetadataCapabilityMessage *tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
 
-	tmsg = new GuiMetadataCapabilityMessage();
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	QStringListIterator eventIterator(events);
 	QJsonObject parameter;
 	QJsonArray actions;
 	while (eventIterator.hasNext()) {
 		actions.append(QJsonValue(eventIterator.next()));
 	}
 	parameter.insert("actions", actions);
-	tmsg->createRequest("guimetadata/subscribe", parameter);
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	tmsg->createRequest("vshl-capabilities", "guimetadata/subscribe", parameter);
+	m_mloop->sendMessage(std::move(msg));
 }
 
 void GuiMetadata::onDisconnected()
@@ -328,18 +330,21 @@ void GuiMetadata::onDisconnected()
 	// vshl-capabilities currently has no unsubscribe verb...
 }
 
-void GuiMetadata::onMessageReceived(MessageType type, Message *message)
+void GuiMetadata::onMessageReceived(std::shared_ptr<Message> msg)
 {
-	if (type == MessageType::GuiMetadataCapabilityEventMessage) {
-		GuiMetadataCapabilityMessage *tmsg = qobject_cast<GuiMetadataCapabilityMessage*>(message);
-		if (tmsg->isEvent()) {
-			if (tmsg->isGuiMetadataRenderTemplateEvent()) {
-				if(updateMetadata(tmsg->eventData()))
-					emit renderTemplate();
-			} else if (tmsg->isGuiMetadataClearTemplateEvent()) {
-				emit clearTemplate();
-			}
+	if (!msg)
+		return;
+
+	if (msg->isEvent()) {
+		std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+		if (emsg->eventApi() != "vshl-capabilities");
+			return;
+		QString ename = emsg->eventName();
+		QJsonObject data = emsg->eventData();
+		if ((ename == "render-template") && updateMetadata(data)) {
+			emit renderTemplate();
+		} else if (ename == "clear_template") {
+			emit clearTemplate();
 		}
 	}
-	message->deleteLater();
 }

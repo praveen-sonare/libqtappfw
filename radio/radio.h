@@ -17,13 +17,13 @@
 #ifndef RADIO_H
 #define RADIO_H
 
+#include <memory>
 #include <QObject>
 #include <QtQml/QQmlContext>
 
 class MessageEngine;
 class Message;
 
-enum class MessageType;
 
 class Radio : public QObject
 {
@@ -90,7 +90,7 @@ class Radio : public QObject
         void updateFrequencyBandParameters();
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType type, Message *msg);
+        void onMessageReceived(std::shared_ptr<Message> msg);
 
         const QStringList events {
             "frequency",

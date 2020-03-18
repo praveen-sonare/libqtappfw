@@ -23,103 +23,44 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-enum MessageId {
+enum class MessageId {
+	Invalid = 0,
 	Call = 2,
 	RetOk = 3,
 	RetErr = 4,
 	Event = 5,
 };
 
-enum class MessageType {
-	GenericMessage,
-	ResponseRequestMessage,
-	TelephonyEventMessage,
-	WeatherEventMessage,
-	MediaplayerEventMessage,
-	NetworkEventMessage,
-	BluetoothEventMessage,
-	PbapEventMessage,
-	RadioEventMessage,
-	MapEventMessage,
-	NavigationEventMessage,
-	VoiceEventMessage,
-	SignalComposerEventMessage,
-	GuiMetadataCapabilityEventMessage,
-	HVACEventMessage,
-};
+class QWebSocket;
 
-class Message : public QObject
+class Message
 {
-	Q_OBJECT
-	Q_ENUM(MessageId)
-
 	public:
 		Message();
+		void  setAdditionalData(QByteArray data) {};
+		QByteArray send(QWebSocket& transport, unsigned int callid);
 
-		bool fromJson(QByteArray jsonData);
-		virtual bool fromJDoc(QJsonDocument jdocData);
-		QByteArray toJson(QJsonDocument::JsonFormat format = QJsonDocument::Compact);
-		bool createRequest(QString api, QString verb, QJsonValue parameter = "None");
-		inline QString eventApi() const
-		{
-			return m_event_api;
-		}
-
-		inline QString eventName() const
-		{
-			return m_event_name;
-		}
-
-		inline QJsonObject eventData() const
-		{
-			return m_event_data;
-		}
-
-		inline QString replyStatus() const
-		{
-			return m_reply_status;
-		}
-
-		inline QString replyInfo() const
-		{
-			return m_reply_info;
-		}
-
-		inline QJsonObject replyData() const
-		{
-			return m_reply_data;
-		}
-
-		inline bool isEvent() const
-		{
-			return m_event;
-		}
-
-		inline bool isReply() const
-		{
-			return m_reply;
-		}
-
-		inline bool isValid() const
+		inline bool isComplete() const
 		{
 			return m_init;
 		}
 
-		inline void setCallId(qint32 callId) {
-			m_request["callid"] = callId;
+		virtual bool getCallId(unsigned int *id) const
+		{
+			return false;
 		}
 
-		inline QMap<QString, QVariant> requestData() const
-		{
-			return m_request;
-		}
+		static MessageId isValid(QJsonDocument );
+
+		virtual bool isEvent() = 0;
+		virtual bool isReply() = 0;
 
 	protected:
-		bool m_event, m_init, m_reply;
-		QString m_event_api, m_event_name, m_reply_info, m_reply_status, m_reply_uuid;
-		QMap<QString, QVariant> m_request;
+		virtual void updateCallId(unsigned int id) {};
+		virtual QByteArray serialize(QJsonDocument::JsonFormat format = QJsonDocument::Compact);
+
+		bool m_init;
 		QJsonDocument m_jdoc;
-		QJsonObject m_event_data, m_reply_data;
 };
 
 #endif // MESSAGE_H

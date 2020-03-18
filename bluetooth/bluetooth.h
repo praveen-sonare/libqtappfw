@@ -17,16 +17,15 @@
 #ifndef BLUETOOTH_H
 #define BLUETOOTH_H
 
+#include <memory>
 #include <QObject>
-#include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QtQml/QQmlContext>
 
 class BluetoothModel;
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Bluetooth : public QObject
 {
@@ -80,7 +79,7 @@ class Bluetooth : public QObject
         // slots
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 
         QString process_uuid(QString uuid) { if (uuid.length() == 36) return uuid; return uuids.value(uuid); };
 

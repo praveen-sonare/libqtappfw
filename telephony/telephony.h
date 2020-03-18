@@ -17,12 +17,11 @@
 #ifndef TELEPHONY_H
 #define TELEPHONY_H
 
+#include <memory>
 #include <QObject>
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Telephony : public QObject
 {
@@ -78,7 +77,7 @@ class Telephony : public QObject
 		QString m_colp;
 		void onConnected();
 		void onDisconnected();
-		void onMessageReceived(MessageType, Message*);
+		void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // TELEPHONY_H

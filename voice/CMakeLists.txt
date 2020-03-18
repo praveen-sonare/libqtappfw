@@ -1,4 +1,4 @@
-add_headers(voice.h voicemessage.h
+add_headers(voice.h
             voiceagentregistry.h voiceagentprofile.h voiceagentmodel.h)
-add_sources(voice.cpp voicemessage.cpp
+add_sources(voice.cpp
             voiceagentregistry.cpp voiceagentprofile.cpp voiceagentmodel.cpp)

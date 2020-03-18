@@ -1,2 +1,2 @@
-add_headers(hvac.h hvacmessage.h)
-add_sources(hvac.cpp hvacmessage.cpp)
+add_headers(hvac.h)
+add_sources(hvac.cpp)

@@ -16,13 +16,13 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "bluetoothmessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
 #include "responsemessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
-#include "bluetoothmodel.h"
 #include "bluetooth.h"
-
+#include "bluetoothmodel.h"
 
 
 Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
@@ -58,10 +58,13 @@ Bluetooth::~Bluetooth()
 
 void Bluetooth::send_command(QString verb, QJsonObject parameter)
 {
-    BluetoothMessage *tmsg = new BluetoothMessage();
-    tmsg->createRequest(verb, parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
+    btmsg->createRequest("Bluetooth-Manager", verb, parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Bluetooth::setPower(bool state)
@@ -261,32 +264,39 @@ void Bluetooth::processAdapterChangesEvent(QJsonObject data)
         m_discoverable = false;
 }
 
-void Bluetooth::onMessageReceived(MessageType type, Message *msg)
+void Bluetooth::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (msg->isEvent() && type == MessageType::BluetoothEventMessage) {
-        BluetoothMessage *tmsg = qobject_cast<BluetoothMessage*>(msg);
+    if (!msg)
+        return;
 
-        if (tmsg->isDeviceChangesEvent()) {
-            processDeviceChangesEvent(tmsg->eventData());
-        } else if (tmsg->isAdapterChangesEvent()) {
-            processAdapterChangesEvent(tmsg->eventData());
-        } else if (tmsg->isAgentEvent()) {
-            emit requestConfirmationEvent(tmsg->eventData());
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        QString ename = emsg->eventName();
+        QString eapi = emsg->eventApi();
+        QJsonObject data = emsg->eventData();
+        if (eapi != "Bluetooth-Manager")
+            return;
+        if (ename == "device_changes") {
+            processDeviceChangesEvent(data);
+        } else if (ename == "adapter_changes") {
+            processAdapterChangesEvent(data);
+        } else if (ename == "agent") {
+            emit requestConfirmationEvent(data);
         }
 
-    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
-        ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
-
-        if (tmsg->requestVerb() == "managed_objects") {
-            populateDeviceList(tmsg->replyData());
-        } else if (tmsg->requestVerb() == "adapter_state") {
-            bool powered = tmsg->replyData().value("powered").toBool();
+    } else if (msg->isReply()) {
+        std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+        //get api name
+        QString verb = rmsg->requestVerb();
+        QJsonObject data = rmsg->replyData();
+        if (verb == "managed_objects") {
+            populateDeviceList(data);
+        } else if (verb == "adapter_state") {
+            bool powered = data.value("powered").toBool();
             if (m_power != powered) {
                 m_power = powered;
                 emit powerChanged(m_power);
             }
         }
     }
-
-    msg->deleteLater();
 }

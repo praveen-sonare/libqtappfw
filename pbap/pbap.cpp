@@ -19,9 +19,10 @@
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
-#include "message.h"
-#include "pbapmessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
 #include "responsemessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "pbap.h"
 
@@ -102,50 +103,62 @@ Pbap::~Pbap()
 
 void Pbap::importContacts(int max_entries)
 {
-    PbapMessage *tmsg = new PbapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
-    tmsg->createRequest("import", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    pmsg->createRequest("bluetooth-pbap", "import", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Pbap::refreshContacts(int max_entries)
 {
-    PbapMessage *tmsg = new PbapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
-    tmsg->createRequest("contacts", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    pmsg->createRequest("bluetooth-pbap", "contacts", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Pbap::refreshCalls(int max_entries)
 {
-    PbapMessage *tmsg = new PbapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     parameter.insert("list", "cch");
     if (max_entries >= 0)
         parameter.insert("max_entries", max_entries);
 
-    tmsg->createRequest("history", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    pmsg->createRequest("bluetooth-pbap", "history", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Pbap::search(QString number)
 {
-    PbapMessage *tmsg = new PbapMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     if (!number.isEmpty())
         parameter.insert("number", number);
     parameter.insert("max_entries", 1);
 
-    tmsg->createRequest("search", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    pmsg->createRequest("bluetooth-pbap", "search", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 bool compareContactPtr(QObject *a, QObject *b)
@@ -253,55 +266,71 @@ void Pbap::sendSearchResults(QJsonArray results)
 void Pbap::onConnected()
 {
     QStringListIterator eventIterator(events);
-    PbapMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new PbapMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        pmsg->createRequest("bluetooth-pbap", "subscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
 void Pbap::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    PbapMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new PbapMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* pmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        pmsg->createRequest("bluetooth-pbap", "unsubscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
-void Pbap::onMessageReceived(MessageType type, Message *msg)
+void Pbap::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (msg->isEvent() && type == MessageType::PbapEventMessage) {
-        PbapMessage *tmsg = qobject_cast<PbapMessage*>(msg);
+    if (!msg)
+        return;
 
-        if (tmsg->isStatusEvent()) {
-            emit statusChanged(tmsg->connected());
-            if (tmsg->connected() == true) {
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        QString ename = emsg->eventName();
+        QString eapi = emsg->eventApi();
+        QVariantMap data = emsg->eventData().toVariantMap();
+
+        if (eapi != "pbap")
+            return;
+
+        bool connected = data.find("connected").value().toBool();
+        if (ename == "status") {
+            emit statusChanged(connected);
+            if (connected)
                 refreshContacts(-1);
             }
-        }
-    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
-        ResponseMessage *tmsg = qobject_cast<ResponseMessage*>(msg);
+    } else if (msg->isReply()) {
+        std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+        QString api = rmsg->requestApi();
+        if (api != "pbap")
+            return;
 
-        if (tmsg->requestVerb() == "contacts" || tmsg->requestVerb() == "import") {
-            updateContacts(tmsg->replyData().value("vcards").toArray());
-        } else if (tmsg->requestVerb() == "history") {
-            updateCalls(tmsg->replyData().value("vcards").toArray());
-        } else if (tmsg->requestVerb() == "search") {
-            sendSearchResults(tmsg->replyData().value("results").toArray());
+        QString verb = rmsg->requestVerb();
+        QJsonObject data = rmsg->replyData();
+        if (verb == "contacts" || verb == "import") {
+            updateContacts(data.value("vcards").toArray());
+        } else if (verb == "history") {
+            updateCalls(data.value("vcards").toArray());
+        } else if (verb == "search") {
+            sendSearchResults(data.value("results").toArray());
         }
     }
-
-    msg->deleteLater();
 }

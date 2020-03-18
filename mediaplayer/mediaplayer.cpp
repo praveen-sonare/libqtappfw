@@ -16,9 +16,10 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "mediaplayermessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
 #include "messageengine.h"
+#include "messagefactory.h"
 #include "mediaplayer.h"
 
 
@@ -89,13 +90,15 @@ void Mediaplayer::updatePlaylist(QVariantMap playlist)
 
 void Mediaplayer::control(QString control, QJsonObject parameter)
 {
-    MediaplayerMessage *tmsg = new MediaplayerMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
 
+    CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
     parameter.insert("value", control);
 
-    tmsg->createRequest("controls", parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    mpmsg->createRequest("mediaplayer", "controls", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 
@@ -186,44 +189,54 @@ void Mediaplayer::loop(QString state)
 void Mediaplayer::onConnected()
 {
     QStringListIterator eventIterator(events);
-    MediaplayerMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new MediaplayerMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        mpmsg->createRequest("mediaplayer", "subscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
 void Mediaplayer::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    MediaplayerMessage *tmsg;
 
     while (eventIterator.hasNext()) {
-        tmsg = new MediaplayerMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+	CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        tmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(tmsg);
-        delete tmsg;
+        mpmsg->createRequest("mediaplayer", "unsubscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
-void Mediaplayer::onMessageReceived(MessageType type, Message *message)
+void Mediaplayer::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (type == MessageType::MediaplayerEventMessage) {
-        MediaplayerMessage *tmsg =
-	    qobject_cast<MediaplayerMessage*>(message);
+    if (!msg)
+        return;
 
-        if (tmsg->isEvent()) {
-            if (tmsg->isPlaylistEvent()) {
-                updatePlaylist(tmsg->eventData().toVariantMap());
-            } else if (tmsg->isMetadataEvent()) {
-                QVariantMap map = tmsg->eventData().toVariantMap();
+    if (msg->isEvent()){
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        QString ename = emsg->eventName();
+        QString eapi = emsg->eventApi();
+        QJsonObject data = emsg->eventData();
+        if (eapi != "mediaplayer")
+            return;
+
+        if (ename == "playlist") {
+            updatePlaylist(data.toVariantMap());
+        } else if (ename == "metadata") {
+            QVariantMap map = data.toVariantMap();
 
                 if (map.contains("track")) {
                     QVariantMap track = map.value("track").toMap();
@@ -247,6 +260,4 @@ void Mediaplayer::onMessageReceived(MessageType type, Message *message)
                 emit metadataChanged(map);
             }
         }
-    }
-    message->deleteLater();
 }

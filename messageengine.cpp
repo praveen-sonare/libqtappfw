@@ -14,24 +14,13 @@
  * limitations under the License.
  */
 
-#include "message.h"
-#include "messageengine.h"
-#include "bluetoothmessage.h"
-#include "guimetadatamessage.h"
-#include "hvacmessage.h"
-#include "mapmessage.h"
-#include "mediaplayermessage.h"
-#include "navigationmessage.h"
-#include "networkmessage.h"
-#include "pbapmessage.h"
-#include "radiomessage.h"
-#include "responsemessage.h"
-#include "signalcomposermessage.h"
-#include "telephonymessage.h"
-#include "weathermessage.h"
-#include "voicemessage.h"
-
 #include <QJsonArray>
+#include <QDebug>
+
+#include "message.h"
+#include "messagefactory.h"
+#include "messageengine.h"
+
 
 MessageEngine::MessageEngine(const QUrl &url, QObject *parent) :
 	QObject(parent),
@@ -44,31 +33,17 @@ MessageEngine::MessageEngine(const QUrl &url, QObject *parent) :
 	m_websocket.open(url);
 }
 
-unsigned int MessageEngine::requestCallId()
+bool MessageEngine::sendMessage(std::unique_ptr<Message> msg)
 {
-	int callid;
-
-	m_mutex.lock();
-	callid = ++m_callid;
-	m_mutex.unlock();
-
-	return callid;
-}
-
-bool MessageEngine::sendMessage(Message *message)
-{
-	if (!message->isValid())
+	if (!msg)
 		return false;
 
-	auto callid = requestCallId();
-	message->setCallId(callid);
-
-	QByteArray data = message->toJson().data();
-	qint64 size = m_websocket.sendTextMessage(data);
-	if (size == 0)
+	unsigned int callid = m_callid++;
+	QByteArray forkeeps = msg->send(m_websocket, callid);
+	if (forkeeps.isEmpty())
 		return false;
 
-	m_calls.insert(callid, data);
+	m_calls.insert(callid, forkeeps);
 
 	return true;
 }
@@ -94,83 +69,20 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 		return;
 	}
 
-	QJsonArray msg = jdoc.array();
-	int msgid = msg[0].toInt();
-
-	Message *message;
-	MessageType type;
-
-	switch (msgid) {
-	case RetOk:
-	case RetErr: {
-		auto callid = msg[1].toString().toInt();
-		message = new ResponseMessage(m_calls[callid]);
-		type = MessageType::ResponseRequestMessage;
-		m_calls.remove(callid);
-		break;
-	}
-	case Event: {
-		QStringList api_str_list = msg[1].toString().split(QRegExp("/"));
-		QString api = api_str_list[0].toLower();
-
-		// FIXME: This should be rewritten using a factory class with a
-		// parser parameter to remove API specific handling here
-		if (api == "bluetooth-manager") {
-			message = new BluetoothMessage;
-			type = MessageType::BluetoothEventMessage;
-		} else if (api == "bluetooth-pbap") {
-			message = new PbapMessage;
-			type = MessageType::PbapEventMessage;
-		} else if (api == "telephony") {
-			message = new TelephonyMessage;
-			type = MessageType::TelephonyEventMessage;
-		} else if (api == "weather") {
-			message = new WeatherMessage;
-			type = MessageType::WeatherEventMessage;
-		} else if (api == "mediaplayer") {
-			message = new MediaplayerMessage;
-			type = MessageType::MediaplayerEventMessage;
-		} else if (api == "navigation") {
-			message = new NavigationMessage;
-			type = MessageType::NavigationEventMessage;
-		} else if (api == "network-manager") {
-			message = new NetworkMessage;
-			type = MessageType::NetworkEventMessage;
-		} else if (api == "radio") {
-			message = new RadioMessage;
-			type = MessageType::RadioEventMessage;
-		} else if (api == "bluetooth-map") {
-			message = new MapMessage;
-			type = MessageType::MapEventMessage;
-		} else if (api == "vshl-core" ) {
-			message = new VoiceMessage;
-			type = MessageType::VoiceEventMessage;
-		} else if (api == "vshl-capabilities" ) {
-			// NOTE: Will need to look at event name to differentiate
-			//       capabilities if more support (e.g. navigation or
-			//       local media control) is added.
-			message = new GuiMetadataCapabilityMessage;
-			type = MessageType::GuiMetadataCapabilityEventMessage;
-		} else if (api == "signal-composer") {
-			message = new SignalComposerMessage;
-			type = MessageType::SignalComposerEventMessage;
-		} else if (api == "hvac") {
-			message = new HVACMessage;
-			type = MessageType::HVACEventMessage;
-		} else {
-			message = new Message;
-			type = MessageType::GenericMessage;
-		}
-		break;
-	}
-	default:
-		break;
-	}
-
-	if (message->fromJDoc(jdoc) == false) {
-		delete message;
+	MessageId id = Message::isValid(jdoc);
+	if (id == MessageId::Invalid) {
+		qWarning() << "Received unknown message, discarding";
 		return;
 	}
 
-	emit messageReceived(type, message);
+	std::shared_ptr<Message> message = MessageFactory::getInstance().createInboundMessage(id, jdoc);
+
+	unsigned int callid;
+	if (message->isReply() && message->getCallId(&callid)) {
+		message->setAdditionalData(m_calls[callid]);
+		m_calls.remove(callid);
+	}
+
+	if (message->isComplete())
+		emit messageReceived(message);
 }

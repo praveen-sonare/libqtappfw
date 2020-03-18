@@ -16,9 +16,9 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "navigationmessage.h"
-#include "responsemessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "navigation.h"
 
@@ -40,21 +40,28 @@ Navigation::~Navigation()
 
 void Navigation::sendWaypoint(double lat, double lon)
 {
-    NavigationMessage *nmsg = new NavigationMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter, point;
     QJsonArray points;
     point.insert("latitude", lat);
     point.insert("longitude", lon);
     points.append(point);
     parameter.insert("points", points);
-    nmsg->createRequest("broadcast_waypoints", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
+    nmsg->createRequest("navigation", "broadcast_waypoints", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Navigation::broadcastPosition(double lat, double lon, double drc, double dst)
 {
-    NavigationMessage *nmsg = new NavigationMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     parameter.insert("position", "car");
@@ -63,14 +70,17 @@ void Navigation::broadcastPosition(double lat, double lon, double drc, double ds
     parameter.insert("direction", drc);
     parameter.insert("distance", dst);
 
-    nmsg->createRequest("broadcast_position", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
+    nmsg->createRequest("navigation", "broadcast_position", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Navigation::broadcastRouteInfo(double lat, double lon, double route_lat, double route_lon)
 {
-    NavigationMessage *nmsg = new NavigationMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     parameter.insert("position", "route");
@@ -79,66 +89,75 @@ void Navigation::broadcastRouteInfo(double lat, double lon, double route_lat, do
     parameter.insert("route_latitude", route_lat);
     parameter.insert("route_longitude", route_lon);
 
-    nmsg->createRequest("broadcast_position", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
+    nmsg->createRequest("navigation", "broadcast_position", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Navigation::broadcastStatus(QString state)
 {
-    NavigationMessage *nmsg = new NavigationMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("state", state);
-    nmsg->createRequest("broadcast_status", parameter);
-    m_mloop->sendMessage(nmsg);
-    delete nmsg;
+    nmsg->createRequest("navigation", "broadcast_status", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Navigation::onConnected()
 {
     QStringListIterator eventIterator(events);
-    NavigationMessage *nmsg;
 
     while (eventIterator.hasNext()) {
-        nmsg = new NavigationMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        nmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(nmsg);
-        delete nmsg;
+        nmsg->createRequest("navigation", "subscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
 void Navigation::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    NavigationMessage *nmsg;
 
     while (eventIterator.hasNext()) {
-        nmsg = new NavigationMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        nmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(nmsg);
-        delete nmsg;
+        nmsg->createRequest("navigation", "unsubscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
-void Navigation::onMessageReceived(MessageType type, Message *msg)
+void Navigation::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (type == MessageType::NavigationEventMessage) {
-        NavigationMessage *tmsg = qobject_cast<NavigationMessage*>(msg);
+    if (!msg)
+        return;
 
-        if (tmsg->isPositionEvent()) {
-            emit positionEvent(tmsg->eventData().toVariantMap());
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        if (emsg->eventApi() != "navigation")
+            return;
+
+        if (emsg->eventName() == "position") {
+            emit positionEvent(emsg->eventData().toVariantMap());
         }
-        if (tmsg->isStatusEvent()) {
-            emit statusEvent(tmsg->eventData().toVariantMap());
+        else if (emsg->eventName() == "status") {
+            emit statusEvent(emsg->eventData().toVariantMap());
         }
-        if (tmsg->isWaypointsEvent()) {
-            emit waypointsEvent(tmsg->eventData().toVariantMap());
+        else if (emsg->eventName() == "waypoints") {
+            emit waypointsEvent(emsg->eventData().toVariantMap());
         }
     }
-
-    msg->deleteLater();
 }

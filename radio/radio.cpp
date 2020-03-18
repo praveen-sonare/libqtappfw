@@ -16,9 +16,10 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "radiomessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
 #include "responsemessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "radio.h"
 
@@ -48,18 +49,25 @@ Radio::~Radio()
 
 void Radio::setBand(int band)
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     parameter.insert("band", band ? "FM": "AM");
-    rmsg->createRequest("band", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    rmsg->createRequest("radio", "band", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Radio::setFrequency(int frequency)
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     if (m_scanning)
@@ -69,9 +77,8 @@ void Radio::setFrequency(int frequency)
         return;
 
     parameter.insert("value", QString::number(frequency));
-    rmsg->createRequest("frequency", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    rmsg->createRequest("radio", "frequency", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
     // To improve UI responsiveness, signal the change here immediately
     // This fixes visual glitchiness in the slider caused by the frequency
@@ -86,22 +93,27 @@ void Radio::setFrequency(int frequency)
 
 void Radio::start()
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
-    rmsg->createRequest("start", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    rmsg->createRequest("radio", "start", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Radio::stop()
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
 
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
-    rmsg->createRequest("stop", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    rmsg->createRequest("radio", "stop", parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void Radio::scanForward()
@@ -109,16 +121,15 @@ void Radio::scanForward()
     if (m_scanning)
         return;
 
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("direction", "forward");
-    rmsg->createRequest("scan_start", parameter);
-    m_mloop->sendMessage(rmsg);
+    rmsg->createRequest("radio", "scan_start", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
     m_scanning = true;
     emit scanningChanged(m_scanning);
-
-    delete rmsg;
 }
 
 void Radio::scanBackward()
@@ -126,60 +137,70 @@ void Radio::scanBackward()
     if (m_scanning)
         return;
 
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("direction", "backward");
-    rmsg->createRequest("scan_start", parameter);
-    m_mloop->sendMessage(rmsg);
+    rmsg->createRequest("radio", "scan_start", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
     m_scanning = true;
     emit scanningChanged(m_scanning);
-
-    delete rmsg;
 }
 
 void Radio::scanStop()
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
 
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
-    rmsg->createRequest("scan_stop", parameter);
-    m_mloop->sendMessage(rmsg);
+    rmsg->createRequest("radio", "scan_stop", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
     m_scanning = false;
     emit scanningChanged(m_scanning);
-
-    delete rmsg;
 }
 
 void Radio::updateFrequencyBandParameters()
 {
-    RadioMessage *rmsg = new RadioMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
 
+    CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("band", m_band ? "FM" : "AM");
-    rmsg->createRequest("frequency_range", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    rmsg->createRequest("radio", "frequency_range", parameter);
+    m_mloop->sendMessage(std::move(msg));
 
-    rmsg = new RadioMessage();
-    rmsg->createRequest("frequency_step", parameter);
-    m_mloop->sendMessage(rmsg);
-    delete rmsg;
+    std::unique_ptr<Message> msg2 = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg2)
+        return;
+
+    rmsg = static_cast<CallMessage*>(msg2.get());
+    rmsg->createRequest("radio", "frequency_step", parameter);
+    m_mloop->sendMessage(std::move(msg2));
 }
 
 void Radio::onConnected()
 {
     QStringListIterator eventIterator(events);
-    RadioMessage *rmsg;
 
     while (eventIterator.hasNext()) {
-        rmsg = new RadioMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        rmsg->createRequest("subscribe", parameter);
-        m_mloop->sendMessage(rmsg);
-        delete rmsg;
+        rmsg->createRequest("radio", "subscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 
     // Trigger initial update of frequency band parameters (min/max/step)
@@ -189,51 +210,63 @@ void Radio::onConnected()
 void Radio::onDisconnected()
 {
     QStringListIterator eventIterator(events);
-    RadioMessage *rmsg;
 
     while (eventIterator.hasNext()) {
-        rmsg = new RadioMessage();
+        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+        if (!msg)
+            return;
+
+        CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
         QJsonObject parameter;
         parameter.insert("value", eventIterator.next());
-        rmsg->createRequest("unsubscribe", parameter);
-        m_mloop->sendMessage(rmsg);
-        delete rmsg;
+        rmsg->createRequest("radio", "unsubscribe", parameter);
+        m_mloop->sendMessage(std::move(msg));
     }
 }
 
-void Radio::onMessageReceived(MessageType type, Message *msg)
+void Radio::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (msg->isEvent() && type == MessageType::RadioEventMessage) {
-        RadioMessage *rmsg = qobject_cast<RadioMessage*>(msg);
+    if (!msg)
+        return;
 
-        if (rmsg->isFrequencyEvent()) {
-            unsigned int frequency = rmsg->eventData().value("value").toInt();
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        QString ename = emsg->eventName();
+        QString eapi = emsg->eventApi();
+        QJsonObject data = emsg->eventData();
+        if (ename == "frequency") {
+            unsigned int frequency = data.value("value").toInt();
             m_frequency = frequency;
             if (!m_scanning && (m_frequency != frequency)) {
                 emit frequencyChanged(m_frequency);
             }
-        } else if (rmsg->isStationFoundEvent()) {
+        } else if (ename == "station_found") {
             m_scanning = false;
             emit scanningChanged(m_scanning);
 
-            m_frequency = rmsg->eventData().value("value").toInt();
+            m_frequency = data.value("value").toInt();
             emit frequencyChanged(m_frequency);
-        } else if (rmsg->isStatusEvent()) {
-            if (rmsg->eventData().value("value") == QString("playing")) {
+        } else if (ename == "status") {
+            if (data.value("value") == QString("playing")) {
                 m_playing = true;
                 emit playingChanged(m_playing);
-            } else if (rmsg->eventData().value("value") == QString("stopped")) {
+            } else if (data.value("value") == QString("stopped")) {
                 m_playing = false;
                 emit playingChanged(m_playing);
             }
         }
-    } else if (msg->isReply() && type == MessageType::ResponseRequestMessage) {
-        ResponseMessage *rmsg = qobject_cast<ResponseMessage*>(msg);
+    } else if (msg->isReply()) {
+        std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+        QString api = rmsg->requestApi();
+        if (api != "radio")
+            return;
 
-        if (rmsg->requestVerb() == "frequency_range") {
-            m_minFrequency = rmsg->replyData().value("min").toInt();
+        QString verb = rmsg->requestVerb();
+        QJsonObject data = rmsg->replyData();
+        if (verb == "frequency_range") {
+            m_minFrequency = data.value("min").toInt();
             emit minFrequencyChanged(m_minFrequency);
-            m_maxFrequency = rmsg->replyData().value("max").toInt();
+            m_maxFrequency = data.value("max").toInt();
             emit maxFrequencyChanged(m_maxFrequency);
 
             // Handle start up
@@ -241,10 +274,9 @@ void Radio::onMessageReceived(MessageType type, Message *msg)
                 m_frequency = m_minFrequency;
                 emit frequencyChanged(m_frequency);
             }
-        } else if (rmsg->requestVerb() == "frequency_step") {
-            m_frequencyStep = rmsg->replyData().value("step").toInt();
+        } else if (verb == "frequency_step") {
+            m_frequencyStep = data.value("step").toInt();
             emit frequencyStepChanged(m_frequencyStep);
         }
     }
-    msg->deleteLater();
 }

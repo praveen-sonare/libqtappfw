@@ -17,6 +17,7 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
@@ -24,8 +25,6 @@
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Map : public QObject
 {
@@ -50,7 +49,7 @@ class Map : public QObject
         // slots
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // MAP_H

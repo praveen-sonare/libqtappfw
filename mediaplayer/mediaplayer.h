@@ -17,14 +17,13 @@
 #ifndef MEDIAPLAYER_H
 #define MEDIAPLAYER_H
 
+#include <memory>
 #include <QObject>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Playlist : public QObject
 {
@@ -106,7 +105,7 @@ class Mediaplayer : public QObject
 
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 
         const QStringList events {
             "playlist",

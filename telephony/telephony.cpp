@@ -16,8 +16,9 @@
 
 #include <QDebug>
 
-#include "message.h"
-#include "telephonymessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "telephony.h"
 
@@ -41,26 +42,35 @@ Telephony::~Telephony()
 
 void Telephony::dial(QString number)
 {
-	TelephonyMessage *tmsg = new TelephonyMessage();
-	tmsg->createRequest("dial", number);
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("telephony", "dial", number);
+	m_mloop->sendMessage(std::move(msg));
 }
 
 void Telephony::answer()
 {
-	TelephonyMessage *tmsg = new TelephonyMessage();
-	tmsg->createRequest("answer");
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("telephony", "answer");
+	m_mloop->sendMessage(std::move(msg));
 }
 
 void Telephony::hangup()
 {
-	TelephonyMessage *tmsg = new TelephonyMessage();
-	tmsg->createRequest("hangup");
-	m_mloop->sendMessage(tmsg);
-	delete tmsg;
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("telephony", "hangup");
+	m_mloop->sendMessage(std::move(msg));
 }
 
 void Telephony::onConnected()
@@ -72,13 +82,15 @@ void Telephony::onConnected()
 		"terminatedCall",
 		"online"};
 	QStringListIterator eventIterator(events);
-	TelephonyMessage *tmsg;
 
 	while (eventIterator.hasNext()) {
-		tmsg = new TelephonyMessage();
-		tmsg->createRequest("subscribe", eventIterator.next());
-		m_mloop->sendMessage(tmsg);
-        delete tmsg;
+		std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+		if (!msg)
+			return;
+
+		CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+		tmsg->createRequest("telephony", "subscribe", eventIterator.next());
+		m_mloop->sendMessage(std::move(msg));
 	}
 
 	setConnected(true);
@@ -89,28 +101,31 @@ void Telephony::onDisconnected()
 	setConnected(false);
 }
 
-void Telephony::onMessageReceived(MessageType type, Message *message)
+void Telephony::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (type == MessageType::TelephonyEventMessage) {
-		TelephonyMessage *tmsg = qobject_cast<TelephonyMessage*>(message);
+	if (!msg)
+		return;
 
-		if (tmsg->isEvent()) {
-			if (tmsg->isCallStateChanged()) {
-				setCallState(tmsg->state());
-			} else if (tmsg->isDialingCall()) {
-				m_colp = tmsg->colp();
+	if (msg->isEvent()) {
+		std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+		if (emsg->eventApi() != "telephony");
+			return;
+		QString ename = emsg->eventName();
+		QJsonObject data = emsg->eventData();
+		if (ename == "callStateChanged") {
+			setCallState(data.find("state").value().toString());
+		} else if (ename == "dialingCall") {
+			m_colp = data.find("colp").value().toString();
 				setCallState("dialing");
-			} else if (tmsg->isIncomingCall()) {
-				m_clip = tmsg->clip();
+		} else if (ename == "incomingCall") {
+			m_clip = data.find("clip").value().toString();
 				setCallState("incoming");
-			} else if (tmsg->isTerminatedCall()) {
+		} else if (ename == "terminatedCall") {
 				setCallState("disconnected");
 				m_colp = "";
 				m_clip = "";
-			} else if (tmsg->isOnline()) {
-				setOnlineState(tmsg->connected());
+		} else if (ename == "online") {
+			setOnlineState(data.find("connected").value().toBool());
 			}
 		}
-	}
-	message->deleteLater();
 }

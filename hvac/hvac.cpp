@@ -19,9 +19,9 @@
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
 
-#include "message.h"
-#include "hvacmessage.h"
-#include "responsemessage.h"
+#include "callmessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "hvac.h"
 
@@ -45,13 +45,16 @@ HVAC::~HVAC()
 
 void HVAC::control(QString verb, QString field, int value)
 {
-    HVACMessage *tmsg = new HVACMessage();
+    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+    if (!msg)
+        return;
+
+    CallMessage* hmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
 
     parameter.insert(field, value);
-    tmsg->createRequest(verb, parameter);
-    m_mloop->sendMessage(tmsg);
-    delete tmsg;
+    hmsg->createRequest("hvac", verb, parameter);
+    m_mloop->sendMessage(std::move(msg));
 }
 
 void HVAC::set_fanspeed(int speed)
@@ -75,14 +78,19 @@ void HVAC::set_temp_right_zone(int temp)
     emit rightTemperatureChanged(temp);
 }
 
-void HVAC::onMessageReceived(MessageType type, Message *msg)
+void HVAC::onMessageReceived(std::shared_ptr<Message> msg)
 {
-    if (msg->isEvent() && type == MessageType::HVACEventMessage) {
-        HVACMessage *tmsg = qobject_cast<HVACMessage*>(msg);
+    if (!msg)
+        return;
 
-        if (tmsg->isLanguageEvent()) {
+    if (msg->isEvent()) {
+        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+        if (emsg->eventApi() != "hvac")
+            return;
+
+        if (emsg->eventName() == "language") {
             // TODO: cannot be currently tested with identity service
-            QVariantMap data = tmsg->eventData().toVariantMap();
+            QVariantMap data = emsg->eventData().toVariantMap();
             emit languageChanged(data.value("language").toString());
         }
     }

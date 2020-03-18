@@ -17,6 +17,7 @@
 #ifndef HVAC_H
 #define HVAC_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
@@ -24,8 +25,6 @@
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class HVAC : public QObject
 {
@@ -62,7 +61,7 @@ class HVAC : public QObject
         void set_temp_right_zone(int temp);
 
         // slots
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // HVAC_H

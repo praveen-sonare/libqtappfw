@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Konsulko Group
+ * Copyright (C) 2018-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,69 @@
 #ifndef RESPONSEMESSAGE_H
 #define RESPONSEMESSAGE_H
 
-#include <QObject>
 
 #include "message.h"
 
 class ResponseMessage : public Message
 {
-    Q_OBJECT
 
-    public:
-        explicit ResponseMessage(QByteArray request = nullptr);
 
-        inline QString requestVerb() const
-        {
-            return m_request["verb"].toString();
-        }
+	public:
+		//deprecated:
+		explicit ResponseMessage(QByteArray request = nullptr);
 
-        inline QVariantMap requestParameters() const
-        {
-            return m_request["parameter"].toMap();
-        }
+		explicit ResponseMessage(QJsonDocument data);
+
+		inline QString requestApi() const
+		{
+			return m_request["api"].toString();
+		}
+
+		inline QString requestVerb() const
+		{
+			return m_request["verb"].toString();
+		}
+
+		inline QVariantMap requestParameters() const
+		{
+			return m_request["parameter"].toMap();
+		}
+
+		inline QString replyStatus() const
+		{
+			return m_reply_status;
+		}
+
+		inline QString replyInfo() const
+		{
+			return m_reply_info;
+		}
+
+		inline QJsonObject replyData() const
+		{
+			return m_reply_data;
+		}
+
+		bool isEvent() override
+		{
+			return false;
+		}
+
+		bool isReply() override
+		{
+			return true;
+		}
+
+		bool setAdditionalData(QByteArray data);
+		bool copyCallId(unsigned int *id);
+
+		QByteArray serialize(QJsonDocument::JsonFormat format = QJsonDocument::Compact) override;
+
+	private:
+		QString m_reply_info, m_reply_status, m_reply_uuid;
+		unsigned int m_reply_callid;
+		QJsonObject m_reply_data;
+		QMap<QString, QVariant> m_request;
 };
 
 #endif // RESPONSEMESSAGE_H

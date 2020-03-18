@@ -17,13 +17,12 @@
 #ifndef SIGNALCOMPOSER_H
 #define SIGNALCOMPOSER_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class SignalComposer : public QObject
 {
@@ -41,7 +40,7 @@ class SignalComposer : public QObject
 
         void onConnected();
         void onDisconnected();
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
 
         const QStringList events {
             "event.vehicle.speed",

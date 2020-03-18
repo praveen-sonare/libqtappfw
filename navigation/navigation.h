@@ -17,14 +17,13 @@
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlListProperty>
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Navigation : public QObject
 {
@@ -50,7 +49,7 @@ class Navigation : public QObject
         MessageEngine *m_mloop;
 
         // slots
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message> msg);
         void onConnected();
         void onDisconnected();
 

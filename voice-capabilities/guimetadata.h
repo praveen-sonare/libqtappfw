@@ -17,13 +17,13 @@
 #ifndef GUIMETADATA_H
 #define GUIMETADATA_H
 
+#include <memory>
 #include <QObject>
 #include <QtQml/QQmlContext>
 
 class MessageEngine;
 class Message;
 
-enum class MessageType;
 
 class GuiMetadata : public QObject
 {
@@ -128,7 +128,7 @@ private:
 
 	void onConnected();
 	void onDisconnected();
-	void onMessageReceived(MessageType, Message*);
+	void onMessageReceived(std::shared_ptr<Message>);
 
 	const QStringList events {
 		"render_template",

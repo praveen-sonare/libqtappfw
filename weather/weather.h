@@ -17,12 +17,11 @@
 #ifndef WEATHER_H
 #define WEATHER_H
 
+#include <memory>
 #include <QObject>
 
 class MessageEngine;
 class Message;
-
-enum class MessageType;
 
 class Weather : public QObject
 {
@@ -48,7 +47,7 @@ class Weather : public QObject
 
 		void onConnected();
 		void onDisconnected();
-		void onMessageReceived(MessageType, Message*);
+		void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // WEATHER_H

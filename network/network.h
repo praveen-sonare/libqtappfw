@@ -17,6 +17,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
@@ -27,10 +28,6 @@
 
 class MessageEngine;
 class Message;
-class NetworkMessage;
-class ResponseMessage;
-
-enum class MessageType;
 
 class Network : public QObject
 {
@@ -72,11 +69,11 @@ class Network : public QObject
         void enableTechnology(QString type);
         void parseTechnologies(QJsonArray technologies);
         void getTechnologies();
-        void processEvent(NetworkMessage *nmsg);
-        void processReply(ResponseMessage *rmsg);
+        void processEvent(std::shared_ptr<Message> msg);
+        void processReply(std::shared_ptr<Message> msg);
 
         // slots
-        void onMessageReceived(MessageType, Message*);
+        void onMessageReceived(std::shared_ptr<Message>);
         void onConnected();
         void onDisconnected();
 

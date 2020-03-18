@@ -16,9 +16,10 @@
 #include <QDebug>
 #include <QStringList>
 
-#include "message.h"
+#include "callmessage.h"
 #include "responsemessage.h"
-#include "voicemessage.h"
+#include "eventmessage.h"
+#include "messagefactory.h"
 #include "messageengine.h"
 #include "voiceagentregistry.h"
 #include "voice.h"
@@ -46,12 +47,15 @@ Voice::~Voice()
 
 void Voice::scan()
 {
-	VoiceMessage *vmsg = new VoiceMessage();
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *vmsg = static_cast<CallMessage*>(msg.get());
 	QJsonObject parameter;
 
-	vmsg->createRequest("enumerateVoiceAgents", parameter);
-	m_loop->sendMessage(vmsg);
-	delete vmsg;
+	vmsg->createRequest("vshl-core", "enumerateVoiceAgents", parameter);
+	m_loop->sendMessage(std::move(msg));
 }
 
 void Voice::getCBLpair(QString id)
@@ -61,41 +65,50 @@ void Voice::getCBLpair(QString id)
 
 void Voice::subscribeAgentToVshlEvents(QString id)
 {
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *vmsg = static_cast<CallMessage*>(msg.get());
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
 	parameter.insert("events", events);
-	vmsg->createRequest("subscribe", parameter);
-	m_loop->sendMessage(vmsg);
-	delete vmsg;
+	vmsg->createRequest("vshl-core", "subscribe", parameter);
+	m_loop->sendMessage(std::move(msg));
 }
 
 void Voice::unsubscribeAgentFromVshlEvents(QString id)
 {
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *vmsg = static_cast<CallMessage*>(msg.get());
 	QJsonArray events = QJsonArray::fromStringList(vshl_events);
-	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
 	parameter.insert("events", events);
-	vmsg->createRequest("unsubscribe", parameter);
-	m_loop->sendMessage(vmsg);
-	delete vmsg;
+	vmsg->createRequest("vshl-core", "unsubscribe", parameter);
+	m_loop->sendMessage(std::move(msg));
 }
 
 void Voice::triggerCBLProcess(QString id)
 {
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *vmsg = static_cast<CallMessage*>(msg.get());
 	QJsonArray events;
-	VoiceMessage *vmsg = new VoiceMessage();
 	QJsonObject parameter;
 
 	parameter.insert("va_id", id);
 	parameter.insert("events", events);
-	vmsg->createRequest("subscribeToLoginEvents", parameter);
-	m_loop->sendMessage(vmsg);
-	delete vmsg;
+	vmsg->createRequest("vshl-core", "subscribeToLoginEvents", parameter);
+	m_loop->sendMessage(std::move(msg));
 }
 
 void Voice::parseAgentsList(QJsonArray agents)
@@ -109,14 +122,20 @@ void Voice::parseAgentsList(QJsonArray agents)
 
 
 
-void Voice::processEvent(VoiceMessage *vmsg)
+void Voice::processEvent(std::shared_ptr<Message> msg)
 {
-	const QString str = vmsg->eventName();
-	QJsonObject data = vmsg->eventData();
+	std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
+	QString eapi = emsg->eventApi();
+
+	if (eapi != "vshl-core")
+		return;
+
+	QString ename = emsg->eventName();
+	QJsonObject data = emsg->eventData();
 	QString agentId = data.value("va_id").toString();
 	QString state = data.value("state").toString();
 
-	if (vmsg->isAuthStateEvent()) {
+	if (ename.contains("voice_authstate_event")) {
 		m_var->setAuthState(
 			agentId,
 			static_cast<VoiceAgentRegistry::ServiceAuthState>(
@@ -124,47 +143,48 @@ void Voice::processEvent(VoiceMessage *vmsg)
 
 		return;
 	}
-	else if (vmsg->isConnectionStateEvent()) {
+	else if (ename.contains("voice_connectionstate_event")) {
 		m_var->setConnectionState(
 			agentId,
 			static_cast<VoiceAgentRegistry::AgentConnectionState>(
 			m_var->stringToEnum(state, "AgentConnectionState")));
 		return;
 	}
-	else if (vmsg->isDialogStateEvent()) {
+	else if (ename.contains("voice_dialogstate_event")) {
 		m_var->setDialogState(
 			agentId,
 			static_cast<VoiceAgentRegistry::VoiceDialogState>(
 			m_var->stringToEnum(state, "VoiceDialogState")));
 		return;
 	}
-	else if (vmsg->isCblEvent()) {
+	else if (ename.contains("cbl")) {
 		QJsonObject payload = data.value("payload").toObject();
 		QString url = payload.value("url").toString();
 		QString code = payload.value("code").toString();
-		if (str.contains("expired"))
+		if (ename.contains("expired"))
 			m_var->updateLoginData(agentId, code, url, true);
-		else if (str.contains("received")) {
+		else if (ename.contains("received")) {
 			m_var->updateLoginData(agentId, code, url, false);
 		} else
 			qWarning() << "Unknown cbl event";
 		return;
 	}
 
-	qWarning() << "Unknown vshl event:" << str;
+	qWarning() << "Unknown vshl event:" << ename;
 }
 
-void Voice::processReply(ResponseMessage *rmsg)
+void Voice::processReply(std::shared_ptr<Message> msg)
 {
+	std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+	QString verb = rmsg->requestVerb();
+	QJsonObject data = rmsg->replyData();
 	if (rmsg->replyStatus() == "failed") {
-		qWarning() << "Reply Failed received for verb:" <<  rmsg->requestVerb();
-	} else	if (rmsg->requestVerb() == "enumerateVoiceAgents") {
-		parseAgentsList(rmsg->replyData().value("agents").toArray());
-		m_var->setDefaultId(
-				rmsg->replyData().value("default").toString());
+		qWarning() << "Reply Failed received for verb:" << verb;
+	} else	if (verb == "enumerateVoiceAgents") {
+		parseAgentsList(data.value("agents").toArray());
+		m_var->setDefaultId(data.value("default").toString());
 	} else
-		qDebug() << "discarding reply received for verb:" <<
-			rmsg->requestVerb();
+		qDebug() << "discarding reply received for verb:" << verb;
 }
 
 void Voice::onConnected()
@@ -180,13 +200,12 @@ void Voice::onDisconnected()
 		unsubscribeAgentFromVshlEvents(*it);
 }
 
-void Voice::onMessageReceived(MessageType type, Message *msg)
+void Voice::onMessageReceived(std::shared_ptr<Message> msg)
 {
-	if (msg->isEvent() && type == MessageType::VoiceEventMessage) {
-		processEvent(qobject_cast<VoiceMessage*>(msg));
-	} else if (msg->isReply() && (type == MessageType::ResponseRequestMessage)) {
-		processReply(qobject_cast<ResponseMessage*>(msg));
+	if (msg->isEvent()) {
+		processEvent(msg);
+	} else if (msg->isReply()) {
+		processReply(msg);
 	} else
-	  qWarning() << "Received unknown message type:" << static_cast<double>(type);
-	msg->deleteLater();
+		qWarning() << "Received invalid inbound message";
 }

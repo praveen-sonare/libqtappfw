@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Konsulko Group
+ * Copyright (C) 2017-2020 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 #ifndef MESSAGEENGINE_H
 #define MESSAGEENGINE_H
 
-#include <QMutex>
-#include <QThread>
+#include <memory>
+#include <atomic>
 #include <QUrl>
 #include <QWebSocket>
 
@@ -29,13 +29,12 @@ class MessageEngine : public QObject
 	Q_OBJECT
 	public:
 		explicit MessageEngine(const QUrl &url, QObject *parent = Q_NULLPTR);
-		bool sendMessage(Message *message);
-		unsigned int requestCallId();
+		bool sendMessage(std::unique_ptr<Message> message);
 
 	Q_SIGNALS:
 		void disconnected();
 		void connected();
-		void messageReceived(MessageType type, Message *message);
+		void messageReceived(std::shared_ptr<Message> message);
 
 	private Q_SLOTS:
 		void onConnected();
@@ -46,8 +45,7 @@ class MessageEngine : public QObject
 		QWebSocket m_websocket;
 		QMap<qint32, QByteArray> m_calls;
 		QUrl m_url;
-		QMutex m_mutex;
-		unsigned int m_callid;
+		std::atomic<unsigned int> m_callid;
 };
 
 #endif // MESSAGEENGINE_H
