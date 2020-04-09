@@ -22,35 +22,10 @@
 
 #include "responsemessage.h"
 
-//deprecated method call new constructor and  setAdditionalData() instead:
-ResponseMessage::ResponseMessage(QByteArray request)
-{
-
-	QJsonDocument jdoc(QJsonDocument::fromJson(request));
-
-	if (!jdoc.isArray()) {
-		qWarning("Invalid appfw message: not an array");
-		return;
-	}
-
-	QJsonArray msg = jdoc.array();
-
-	if (msg.size() != 4) {
-		qWarning("Invalid appfw message: invalid array size");
-		return;
-	}
-
-	QStringList api_str_list = msg[2].toString().split(QRegExp("/"));
-
-	m_request["msgid"] = msg.at(0);
-	m_request["callid"] = msg.at(1);
-	m_request["api"] = api_str_list[0];
-	m_request["verb"] = api_str_list[1];
-	m_request["parameter"] = msg.at(3);
-}
 
 ResponseMessage::ResponseMessage(QJsonDocument content)
 {
+	m_jdoc = content;
 	QJsonArray msg = content.array();
 	if (!msg[2].isObject()) {
 		qWarning("Invalid appfw payload: no JSON object");

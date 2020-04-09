@@ -60,6 +60,11 @@ class ResponseMessage : public Message
 			return m_reply_data;
 		}
 
+		bool getCallId(unsigned int *id) const override
+		{
+			*id = m_reply_callid;
+			return true;
+		}
 		bool isEvent() override
 		{
 			return false;
@@ -70,7 +75,7 @@ class ResponseMessage : public Message
 			return true;
 		}
 
-		bool setAdditionalData(QByteArray data);
+		bool setAdditionalData(QByteArray data) override;
 		bool copyCallId(unsigned int *id);
 
 		QByteArray serialize(QJsonDocument::JsonFormat format = QJsonDocument::Compact) override;

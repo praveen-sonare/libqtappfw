@@ -37,7 +37,10 @@ class Message
 {
 	public:
 		Message();
-		void  setAdditionalData(QByteArray data) {};
+		virtual bool  setAdditionalData(QByteArray data)
+		{
+			return false;
+		}
 		QByteArray send(QWebSocket& transport, unsigned int callid);
 
 		inline bool isComplete() const

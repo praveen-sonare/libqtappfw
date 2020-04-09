@@ -49,8 +49,7 @@ QByteArray CallMessage::serialize(QJsonDocument::JsonFormat format)
 	array.append(m_request["api"].toString() + "/" + m_request["verb"].toString());
 	array.append(m_request["parameter"].toJsonValue());
 
-	QJsonDocument jdoc;
-	jdoc.setArray(array);
+	m_jdoc.setArray(array);
 
-	return jdoc.toJson(format).data();
+	return m_jdoc.toJson(format).data();
 }
