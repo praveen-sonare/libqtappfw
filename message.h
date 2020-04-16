@@ -17,6 +17,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include <memory>
 #include <QObject>
 #include <QMap>
 #include <QVariant>
@@ -65,5 +66,6 @@ class Message
 		bool m_init;
 		QJsonDocument m_jdoc;
 };
+Q_DECLARE_METATYPE(std::shared_ptr<Message>)
 
 #endif // MESSAGE_H
