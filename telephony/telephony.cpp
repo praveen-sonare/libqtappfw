@@ -47,7 +47,10 @@ void Telephony::dial(QString number)
 		return;
 
 	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
-	tmsg->createRequest("telephony", "dial", number);
+	QJsonObject parameter;
+
+	parameter.insert("value", number);
+	tmsg->createRequest("telephony", "dial", parameter);
 	m_mloop->sendMessage(std::move(msg));
 }
 
@@ -89,7 +92,9 @@ void Telephony::onConnected()
 			return;
 
 		CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
-		tmsg->createRequest("telephony", "subscribe", eventIterator.next());
+		QJsonObject parameter;
+		parameter.insert("value", eventIterator.next());
+		tmsg->createRequest("telephony", "subscribe", parameter);
 		m_mloop->sendMessage(std::move(msg));
 	}
 
