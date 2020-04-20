@@ -337,7 +337,7 @@ void GuiMetadata::onMessageReceived(std::shared_ptr<Message> msg)
 
 	if (msg->isEvent()) {
 		std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
-		if (emsg->eventApi() != "vshl-capabilities");
+		if (emsg->eventApi() != "vshl-capabilities")
 			return;
 		QString ename = emsg->eventName();
 		QJsonObject data = emsg->eventData();
