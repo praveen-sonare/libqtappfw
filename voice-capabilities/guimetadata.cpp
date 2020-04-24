@@ -341,7 +341,7 @@ void GuiMetadata::onMessageReceived(std::shared_ptr<Message> msg)
 			return;
 		QString ename = emsg->eventName();
 		QJsonObject data = emsg->eventData();
-		if ((ename == "render-template") && updateMetadata(data)) {
+		if ((ename == "render_template") && updateMetadata(data)) {
 			emit renderTemplate();
 		} else if (ename == "clear_template") {
 			emit clearTemplate();
