@@ -308,7 +308,7 @@ void Pbap::onMessageReceived(std::shared_ptr<Message> msg)
         QString eapi = emsg->eventApi();
         QVariantMap data = emsg->eventData().toVariantMap();
 
-        if (eapi != "pbap")
+        if (eapi != "bluetooth-pbap")
             return;
 
         bool connected = data.find("connected").value().toBool();
@@ -320,7 +320,7 @@ void Pbap::onMessageReceived(std::shared_ptr<Message> msg)
     } else if (msg->isReply()) {
         std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
         QString api = rmsg->requestApi();
-        if (api != "pbap")
+        if (api != "bluetooth-pbap")
             return;
 
         QString verb = rmsg->requestVerb();
