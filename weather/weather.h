@@ -41,7 +41,7 @@ class Weather : public QObject
 		void conditionChanged(QString condition);
 
 	private:
-		MessageEngine *m_mloop;
+		std::shared_ptr<MessageEngine> m_mloop;
 		QString m_temperature;
 		QString m_condition;
 

@@ -41,7 +41,7 @@ class Voice : public QObject
 		Q_INVOKABLE void getCBLpair(QString id);
 
 	private:
-		MessageEngine *m_loop;
+		std::shared_ptr<MessageEngine> m_loop;
 		VoiceAgentRegistry *m_var;
 
 		void subscribeAgentToVshlEvents(QString id);

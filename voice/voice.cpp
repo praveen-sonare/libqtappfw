@@ -21,27 +21,26 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "voiceagentregistry.h"
 #include "voice.h"
 
 Voice::Voice (QUrl &url, QQmlContext *context, QObject *parent) :
-	QObject(parent),
-	m_loop(nullptr)
+	QObject(parent)
 {
-	m_loop = new MessageEngine(url);
+	m_loop = MessageEngineFactory::getInstance().getMessageEngine(url);
 	m_var = new VoiceAgentRegistry(this, context, parent);
 
-	QObject::connect(m_loop, &MessageEngine::connected,
+	QObject::connect(m_loop.get(), &MessageEngine::connected,
 			 this, &Voice::onConnected);
-	QObject::connect(m_loop, &MessageEngine::disconnected,
+	QObject::connect(m_loop.get(), &MessageEngine::disconnected,
 			 this, &Voice::onDisconnected);
-	QObject::connect(m_loop, &MessageEngine::messageReceived,
+	QObject::connect(m_loop.get(), &MessageEngine::messageReceived,
 			 this, &Voice::onMessageReceived);
 }
 
 Voice::~Voice()
 {
-	delete m_loop;
 	delete m_var;
 }
 

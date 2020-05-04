@@ -22,27 +22,26 @@
 #include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "networkadapter.h"
 #include "network.h"
 
 
 Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_adapters.append(new WifiAdapter(this, context, parent));
 
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Network::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Network::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Network::onMessageReceived);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Network::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Network::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Network::onMessageReceived);
 
     m_adapters.append(new WiredAdapter(this, context, parent));
 }
 
 Network::~Network()
 {
-    delete m_mloop;
     while (!m_adapters.isEmpty())
         m_adapters.takeLast();
 }

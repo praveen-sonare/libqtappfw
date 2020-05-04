@@ -21,12 +21,12 @@
 #include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "radio.h"
 
 
 Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
-    m_mloop(nullptr),
     m_band(1),
     m_frequency(0),
     m_minFrequency(0),
@@ -34,17 +34,16 @@ Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
     m_playing(false),
     m_scanning(false)
 {
-    m_mloop = new MessageEngine(url);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_context = context;
 
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Radio::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Radio::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Radio::onMessageReceived);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Radio::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Radio::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Radio::onMessageReceived);
 }
 
 Radio::~Radio()
 {
-    delete m_mloop;
 }
 
 void Radio::setBand(int band)

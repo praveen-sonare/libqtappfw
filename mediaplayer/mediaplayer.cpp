@@ -20,6 +20,7 @@
 #include "eventmessage.h"
 #include "messageengine.h"
 #include "messagefactory.h"
+#include "messageenginefactory.h"
 #include "mediaplayer.h"
 
 
@@ -37,20 +38,18 @@ Playlist::Playlist(QVariantMap &item)
 Playlist::~Playlist() {}
 
 Mediaplayer::Mediaplayer (QUrl &url, QQmlContext *context, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_context = context;
     m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Mediaplayer::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Mediaplayer::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Mediaplayer::onMessageReceived);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Mediaplayer::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Mediaplayer::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Mediaplayer::onMessageReceived);
 }
 
 Mediaplayer::~Mediaplayer()
 {
-    delete m_mloop;
 }
 
 // Qt UI Context

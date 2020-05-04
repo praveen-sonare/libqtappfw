@@ -24,6 +24,7 @@
 #include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "pbap.h"
 
 
@@ -81,24 +82,22 @@ int RecentCall::stringToEnum(QString key)
 }
 
 Pbap::Pbap (QUrl &url, QQmlContext *context, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_context = context;
     m_context->setContextProperty("ContactsModel", QVariant::fromValue(m_contacts));
     qmlRegisterUncreatableType<PhoneNumber>("PhoneNumber", 1, 0, "PhoneNumber", "Enum");
     m_context->setContextProperty("RecentCallModel", QVariant::fromValue(m_calls));
     qmlRegisterUncreatableType<RecentCall>("RecentCall", 1, 0, "RecentCall", "Enum");
 
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Pbap::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Pbap::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Pbap::onMessageReceived);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Pbap::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Pbap::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Pbap::onMessageReceived);
 }
 
 Pbap::~Pbap()
 {
-    delete m_mloop;
 }
 
 void Pbap::importContacts(int max_entries)

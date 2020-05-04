@@ -54,7 +54,7 @@ class Network : public QObject
         void searchResults(QString name);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         QList<AdapterIf*> m_adapters;
 

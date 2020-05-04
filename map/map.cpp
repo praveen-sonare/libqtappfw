@@ -21,21 +21,20 @@
 #include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "map.h"
 
 Map::Map (QUrl &url, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Map::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Map::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Map::onMessageReceived);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Map::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Map::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Map::onMessageReceived);
 }
 
 Map::~Map()
 {
-    delete m_mloop;
 }
 
 void Map::compose(QString recipient, QString message)

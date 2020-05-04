@@ -21,22 +21,21 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "guimetadata.h"
 
 GuiMetadata::GuiMetadata(QUrl &url, QQmlContext *context, QObject * parent) :
-	QObject(parent),
-	m_mloop(nullptr)
+	QObject(parent)
 {
-	m_mloop = new MessageEngine(url);
+	m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
 	m_context = context;
-	QObject::connect(m_mloop, &MessageEngine::connected, this, &GuiMetadata::onConnected);
-	QObject::connect(m_mloop, &MessageEngine::disconnected, this, &GuiMetadata::onDisconnected);
-	QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &GuiMetadata::onMessageReceived);
+	QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &GuiMetadata::onConnected);
+	QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &GuiMetadata::onDisconnected);
+	QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &GuiMetadata::onMessageReceived);
 }
 
 GuiMetadata::~GuiMetadata()
 {
-	delete m_mloop;
 }
 
 // Qt UI Context

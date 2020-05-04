@@ -29,12 +29,6 @@ VoiceAgentRegistry::VoiceAgentRegistry(Voice *voice, QQmlContext *context, QObje
 	vc(voice)
 {
 	m_model = new VoiceAgentModel();
-	QSortFilterProxyModel *model = new QSortFilterProxyModel();
-	model->setSourceModel(m_model);
-	model->setSortRole(VoiceAgentModel::VoiceAgentRoles::IdRole);
-	model->setSortCaseSensitivity(Qt::CaseInsensitive);
-	model->sort(0);
-
 	context->setContextProperty("VoiceAgentModel", m_model);
 	context->setContextProperty("VoiceAgent", this);
 }

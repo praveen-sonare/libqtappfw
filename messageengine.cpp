@@ -22,8 +22,8 @@
 #include "messageengine.h"
 
 
-MessageEngine::MessageEngine(const QUrl &url, QObject *parent) :
-	QObject(parent),
+MessageEngine::MessageEngine(const QUrl &url) :
+	QObject(Q_NULLPTR),
 	m_callid(0),
 	m_url(url)
 {
@@ -43,6 +43,7 @@ bool MessageEngine::sendMessage(std::unique_ptr<Message> msg)
 	if (forkeeps.isEmpty())
 		return false;
 
+	std::lock_guard<std::mutex> localguard(m_mutex);
 	m_calls.insert(callid, forkeeps);
 
 	return true;
@@ -80,6 +81,7 @@ void MessageEngine::onTextMessageReceived(QString jsonStr)
 	unsigned int callid;
 	if (message->isReply() && message->getCallId(&callid)) {
 		message->setAdditionalData(m_calls[callid]);
+		std::lock_guard<std::mutex> localguard(m_mutex);
 		m_calls.remove(callid);
 	}
 

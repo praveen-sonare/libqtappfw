@@ -45,7 +45,7 @@ class HVAC : public QObject
         void languageChanged(QString language);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
 
         int m_fanspeed;
         int m_temp_left_zone;

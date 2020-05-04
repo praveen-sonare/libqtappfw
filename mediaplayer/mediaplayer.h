@@ -96,7 +96,7 @@ class Mediaplayer : public QObject
         void metadataChanged(QVariantMap metadata);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         QList<QObject *> m_playlist;
 

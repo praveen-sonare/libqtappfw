@@ -23,24 +23,23 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "hvac.h"
 
 
 // TODO: don't duplicate defaults from HVAC service here
 HVAC::HVAC (QUrl &url, QObject * parent) :
     QObject(parent),
-    m_mloop(nullptr),
     m_fanspeed(0),
     m_temp_left_zone(21),
     m_temp_right_zone(21)
 {
-    m_mloop = new MessageEngine(url);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &HVAC::onMessageReceived);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &HVAC::onMessageReceived);
 }
 
 HVAC::~HVAC()
 {
-    delete m_mloop;
 }
 
 void HVAC::control(QString verb, QString field, int value)

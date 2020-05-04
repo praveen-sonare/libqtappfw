@@ -21,20 +21,20 @@
 #include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "bluetooth.h"
 #include "bluetoothmodel.h"
 
 
 Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
     QObject(parent),
-    m_context(context),
-    m_mloop(nullptr)
+    m_context(context)
 {
-    m_mloop = new MessageEngine(url);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_bluetooth = new BluetoothModel();
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Bluetooth::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Bluetooth::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Bluetooth::onMessageReceived);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Bluetooth::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Bluetooth::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Bluetooth::onMessageReceived);
 
     BluetoothModelFilter *m_model = new BluetoothModelFilter();
     m_model->setSourceModel(m_bluetooth);
@@ -53,7 +53,6 @@ Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
 
 Bluetooth::~Bluetooth()
 {
-    delete m_mloop;
 }
 
 void Bluetooth::send_command(QString verb, QJsonObject parameter)

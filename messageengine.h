@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <atomic>
+#include <mutex>
 #include <QUrl>
 #include <QWebSocket>
 
@@ -28,7 +29,7 @@ class MessageEngine : public QObject
 {
 	Q_OBJECT
 	public:
-		explicit MessageEngine(const QUrl &url, QObject *parent = Q_NULLPTR);
+		explicit MessageEngine(const QUrl &url);
 		bool sendMessage(std::unique_ptr<Message> message);
 
 	Q_SIGNALS:
@@ -43,9 +44,11 @@ class MessageEngine : public QObject
 
 	private:
 		QWebSocket m_websocket;
+		std::mutex m_mutex;
 		QMap<qint32, QByteArray> m_calls;
 		QUrl m_url;
 		std::atomic<unsigned int> m_callid;
+		friend class MessageEngineFactory;
 };
 
 #endif // MESSAGEENGINE_H

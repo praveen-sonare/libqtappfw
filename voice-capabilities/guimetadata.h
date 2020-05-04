@@ -114,7 +114,7 @@ signals:
 	void clearTemplate();
 
 private:
-	MessageEngine *m_mloop;
+	std::shared_ptr<MessageEngine> m_mloop;
 	QQmlContext *m_context;
 
 	void clearMetadata();

@@ -20,22 +20,21 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "signalcomposer.h"
 
 
 SignalComposer::SignalComposer (QUrl &url, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &SignalComposer::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &SignalComposer::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &SignalComposer::onMessageReceived);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &SignalComposer::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &SignalComposer::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &SignalComposer::onMessageReceived);
 }
 
 SignalComposer::~SignalComposer()
 {
-    delete m_mloop;
 }
 
 void SignalComposer::onConnected()

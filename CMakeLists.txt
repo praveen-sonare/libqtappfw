@@ -61,8 +61,8 @@ set (SUBDIRS
 	voice-capabilities
 	weather)
 
-add_headers(message.h messagefactory.h messageengine.h responsemessage.h callmessage.h eventmessage.h)
-add_sources(message.cpp messagefactory.cpp messageengine.cpp responsemessage.cpp callmessage.cpp eventmessage.cpp)
+add_headers(message.h messagefactory.h messageengine.h messageenginefactory.h responsemessage.h callmessage.h eventmessage.h utils.h)
+add_sources(message.cpp messagefactory.cpp messageengine.cpp messageenginefactory.cpp responsemessage.cpp callmessage.cpp eventmessage.cpp)
 
 foreach(subdir ${SUBDIRS})
 	add_subdirectory(${subdir})

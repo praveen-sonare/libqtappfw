@@ -44,7 +44,7 @@ class Map : public QObject
         void messageResult(QString handle, QVariantMap message);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
 
         // slots
         void onConnected();

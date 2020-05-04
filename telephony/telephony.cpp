@@ -20,24 +20,23 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "telephony.h"
 
 
 Telephony::Telephony (QUrl &url, QObject * parent) :
 	QObject(parent),
 	m_connected(false),
-	m_mloop(nullptr),
 	m_call_state("disconnected")
 {
-	m_mloop = new MessageEngine(url);
-	QObject::connect(m_mloop, &MessageEngine::connected, this, &Telephony::onConnected);
-	QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Telephony::onDisconnected);
-	QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Telephony::onMessageReceived);
+	m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+	QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Telephony::onConnected);
+	QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Telephony::onDisconnected);
+	QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Telephony::onMessageReceived);
 }
 
 Telephony::~Telephony()
 {
-	delete m_mloop;
 }
 
 void Telephony::dial(QString number)

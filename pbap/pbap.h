@@ -157,7 +157,7 @@ class Pbap : public QObject
         void statusChanged(bool connected);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         QList<QObject *>m_contacts;
         QList<QObject *>m_calls;

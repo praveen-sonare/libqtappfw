@@ -20,22 +20,21 @@
 #include "eventmessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
+#include "messageenginefactory.h"
 #include "navigation.h"
 
 
 Navigation::Navigation (QUrl &url, QObject * parent) :
-    QObject(parent),
-    m_mloop(nullptr)
+    QObject(parent)
 {
-    m_mloop = new MessageEngine(url);
-    QObject::connect(m_mloop, &MessageEngine::connected, this, &Navigation::onConnected);
-    QObject::connect(m_mloop, &MessageEngine::disconnected, this, &Navigation::onDisconnected);
-    QObject::connect(m_mloop, &MessageEngine::messageReceived, this, &Navigation::onMessageReceived);
+    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Navigation::onConnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Navigation::onDisconnected);
+    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Navigation::onMessageReceived);
 }
 
 Navigation::~Navigation()
 {
-    delete m_mloop;
 }
 
 void Navigation::sendWaypoint(double lat, double lon)

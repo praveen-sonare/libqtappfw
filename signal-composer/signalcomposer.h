@@ -36,7 +36,7 @@ class SignalComposer : public QObject
         void signalEvent(QString uid, QString value, QString units, quint64 timestamp);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
 
         void onConnected();
         void onDisconnected();

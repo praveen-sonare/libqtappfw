@@ -76,7 +76,7 @@ class Radio : public QObject
 	void frequencyStepChanged(int frequencyStep);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
 
 	unsigned int m_band;

@@ -66,7 +66,7 @@ class Bluetooth : public QObject
         void requestConfirmationEvent(QJsonObject data);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         BluetoothModel *m_bluetooth;
         void send_command(QString, QJsonObject);

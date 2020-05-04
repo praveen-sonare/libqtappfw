@@ -46,7 +46,7 @@ class Navigation : public QObject
         void waypointsEvent(QVariantMap data);
 
     private:
-        MessageEngine *m_mloop;
+        std::shared_ptr<MessageEngine> m_mloop;
 
         // slots
         void onMessageReceived(std::shared_ptr<Message> msg);

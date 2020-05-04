@@ -71,7 +71,7 @@ class Telephony : public QObject
 	private:
 		bool m_connected;
 		bool m_online;
-		MessageEngine *m_mloop;
+		std::shared_ptr<MessageEngine> m_mloop;
 		QString m_call_state;
 		QString m_clip;
 		QString m_colp;
