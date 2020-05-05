@@ -21,7 +21,6 @@
 #include <QUrl>
 #include "messageenginefactory.h"
 #include "messageengine.h"
-#include "utils.h"
 
 std::shared_ptr<MessageEngine> MessageEngineFactory::getMessageEngine(const QUrl& url)
 {
