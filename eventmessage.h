@@ -23,9 +23,7 @@
 class EventMessage : public Message
 {
 	public:
-		explicit EventMessage(QJsonDocument data);
-
-                inline QString eventApi() const
+		inline QString eventApi() const
 		{
 			return m_event_api;
 		}
@@ -55,6 +53,9 @@ class EventMessage : public Message
 	private:
 		QString m_event_api, m_event_name;
 		QJsonObject m_event_data;
+
+		explicit EventMessage(QJsonDocument data);
+		friend class MessageFactory;
 };
 
 #endif // EVENTMESSAGE_H

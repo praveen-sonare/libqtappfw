@@ -23,8 +23,6 @@
 class CallMessage : public Message
 {
 	public:
-		CallMessage() = default;
-
 		bool createRequest(QString api, QString verb, QJsonValue parameter = "None");
 
 		bool isEvent() override
@@ -46,6 +44,9 @@ class CallMessage : public Message
 
 	private:
 		QMap<QString, QVariant> m_request;
+
+		CallMessage() = default;
+		friend class MessageFactory;
 };
 
 #endif // CALLMESSAGE_H

@@ -22,14 +22,7 @@
 
 class ResponseMessage : public Message
 {
-
-
 	public:
-		//deprecated:
-		explicit ResponseMessage(QByteArray request = nullptr);
-
-		explicit ResponseMessage(QJsonDocument data);
-
 		inline QString requestApi() const
 		{
 			return m_request["api"].toString();
@@ -85,6 +78,9 @@ class ResponseMessage : public Message
 		unsigned int m_reply_callid;
 		QJsonObject m_reply_data;
 		QMap<QString, QVariant> m_request;
+
+		explicit ResponseMessage(QJsonDocument data);
+		friend class MessageFactory;
 };
 
 #endif // RESPONSEMESSAGE_H
