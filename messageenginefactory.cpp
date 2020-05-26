@@ -31,7 +31,7 @@ std::shared_ptr<MessageEngine> MessageEngineFactory::getMessageEngine(const QUrl
 	auto  urlstr = url.toString();
 	auto pme = lut[urlstr];
 	if (!pme){
-		pme  = std::make_shared<MessageEngine>(url);
+		pme = std::shared_ptr<MessageEngine>{new MessageEngine(url)};
 		lut[urlstr] = pme;
 	}
 

@@ -29,7 +29,6 @@ class MessageEngine : public QObject
 {
 	Q_OBJECT
 	public:
-		explicit MessageEngine(const QUrl &url);
 		bool sendMessage(std::unique_ptr<Message> message);
 
 	Q_SIGNALS:
@@ -48,6 +47,8 @@ class MessageEngine : public QObject
 		QMap<qint32, QByteArray> m_calls;
 		QUrl m_url;
 		std::atomic<unsigned int> m_callid;
+
+		explicit MessageEngine(const QUrl &url);
 		friend class MessageEngineFactory;
 };
 
