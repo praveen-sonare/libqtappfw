@@ -22,6 +22,8 @@
 
 class ResponseMessage : public Message
 {
+
+
 	public:
 		inline QString requestApi() const
 		{

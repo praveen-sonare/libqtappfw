@@ -1,0 +1,12 @@
+prefix=@DEST_DIR@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: qtappfw-mediaplayer
+Description: Library wrapping AGL AppFW mediaplayer data in Qt objects
+Version: 1.0.0
+
+Requires: Qt5Qml
+Libs: -L${libdir} -lqtappfw-mediaplayer
+Cflags: -I${includedir}/qtappfw-mediaplayer
