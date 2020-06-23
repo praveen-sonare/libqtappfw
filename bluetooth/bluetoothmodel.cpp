@@ -156,6 +156,9 @@ BluetoothDevice *BluetoothModel::updateDeviceProperties(BluetoothDevice *device,
     bool paired = properties.value("paired").toBool();
     bool connected = properties.value("connected").toBool();
 
+    if (id.isEmpty())
+        return nullptr;
+
     if (device == nullptr)
         return new BluetoothDevice(id, address, name, paired, connected);
 

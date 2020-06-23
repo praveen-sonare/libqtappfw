@@ -228,16 +228,23 @@ void Bluetooth::processDeviceChangesEvent(QJsonObject data)
     QString action = data.value("action").toString();
     QString id = data.value("device").toString();
 
-    if (action == "added") {
-        BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, data);
-        m_bluetooth->addDevice(device);
-    } else if (action == "changed") {
-        BluetoothDevice *device = m_bluetooth->getDevice(id);
-        m_bluetooth->updateDeviceProperties(device, data);
-    } else if (action == "removed") {
-        BluetoothDevice *device = m_bluetooth->getDevice(id);
-        m_bluetooth->removeDevice(device);
+    if (id.isEmpty())
+        return;
+
+    BluetoothDevice *device = m_bluetooth->getDevice(id);
+    if (action == "removed") {
+        if (device != nullptr)
+            m_bluetooth->removeDevice(device);
+	return;
     }
+
+    BluetoothDevice *ndevice = m_bluetooth->updateDeviceProperties(device, data);
+    if (ndevice == nullptr) {
+        qDebug() << "bt - failed to create device object with id: " << id;
+        return;
+    }
+    if (device == nullptr)  //device not previously in model
+        m_bluetooth->addDevice(ndevice);
 }
 
 void Bluetooth::processAdapterChangesEvent(QJsonObject data)
