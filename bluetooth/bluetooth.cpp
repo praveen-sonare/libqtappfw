@@ -289,13 +289,21 @@ void Bluetooth::onMessageReceived(std::shared_ptr<Message> msg)
         } else if (ename == "agent") {
             emit requestConfirmationEvent(data);
         }
-
     } else if (msg->isReply()) {
         std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
-        //get api name
         QString verb = rmsg->requestVerb();
         QJsonObject data = rmsg->replyData();
-        if (verb == "managed_objects") {
+        if (rmsg->requestApi() != "Bluetooth-Manager")
+            return;
+
+        if (rmsg->replyStatus() == "failed") {
+            qDebug() << "failed bt verb:" << verb;
+            if (rmsg->replyInfo().contains("No adapter")) {
+                m_power = false;
+                emit powerChanged(m_power);
+            }
+        }
+        else if (verb == "managed_objects") {
             populateDeviceList(data);
         } else if (verb == "adapter_state") {
             bool powered = data.value("powered").toBool();
