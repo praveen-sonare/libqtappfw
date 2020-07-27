@@ -18,6 +18,7 @@
 
 #include "callmessage.h"
 #include "eventmessage.h"
+#include "responsemessage.h"
 #include "messagefactory.h"
 #include "messageengine.h"
 #include "messageenginefactory.h"
@@ -97,6 +98,15 @@ void Telephony::onConnected()
 		m_mloop->sendMessage(std::move(msg));
 	}
 
+	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
+	if (!msg)
+		return;
+
+	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
+	tmsg->createRequest("Bluetooth-Manager", "adapter_state", QJsonObject());
+	m_mloop->sendMessage(std::move(msg));
+	//make ui available, while waiting for connection status,
+	//most likely profile is already connected
 	setConnected(true);
 }
 
@@ -130,6 +140,24 @@ void Telephony::onMessageReceived(std::shared_ptr<Message> msg)
 				m_clip = "";
 		} else if (ename == "online") {
 			setOnlineState(data.find("connected").value().toBool());
+		}
+	}
+	else if (msg->isReply()) {
+		std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
+		QString verb = rmsg->requestVerb();
+		QJsonObject data = rmsg->replyData();
+		if (rmsg->replyStatus() == "failed") {
+			qDebug() << "phone failed bt verb:" << verb;
+			if ((verb == "adapter_state") &&
+			    (rmsg->replyInfo().contains("No adapter")))
+				setConnected(false);
+			else if (verb == "dial") {
+				setCallState("disconnected");
+				m_colp = "";
+				m_clip = "";
 			}
 		}
+	} else
+		qWarning() << "Received invalid inbound message";
+
 }
