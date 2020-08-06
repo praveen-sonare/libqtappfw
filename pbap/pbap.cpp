@@ -234,9 +234,10 @@ void Pbap::updateCalls(QJsonArray vcards)
                 name = number;
         }
 
-        type = entry.value("type").toString();
-        datetime = entry.value("timestamp").toString();
+        QStringList typelist = entry.value("type").toString().split(QRegExp("="));
+        type = typelist.takeLast();
 
+        datetime = entry.value("timestamp").toString();
         // Convert the PBAP date/time to ISO 8601 format
         datetime.insert(4, '-');
         datetime.insert(7, '-');
