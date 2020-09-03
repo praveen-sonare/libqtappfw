@@ -122,7 +122,7 @@ void Telephony::onMessageReceived(std::shared_ptr<Message> msg)
 
 	if (msg->isEvent()) {
 		std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
-		if (emsg->eventApi() != "telephony");
+		if (emsg->eventApi() != "telephony")
 			return;
 		QString ename = emsg->eventName();
 		QJsonObject data = emsg->eventData();
