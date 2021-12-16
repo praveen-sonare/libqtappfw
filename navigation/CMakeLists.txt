@@ -8,7 +8,7 @@ add_library(qtappfw-navigation SHARED navigation.cpp)
 target_include_directories(qtappfw-navigation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-navigation PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-navigation qtappfw-core)
+target_link_libraries(qtappfw-navigation Qt5::Qml)
 set_target_properties(qtappfw-navigation PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

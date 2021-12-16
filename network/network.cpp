@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,14 @@
 #include <QDebug>
 #include <QtQml/QQmlEngine>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
 #include "networkadapter.h"
 #include "network.h"
 
 
-Network::Network (QUrl &url, QQmlContext *context, QObject * parent) :
+Network::Network (bool register_agent, QQmlContext *context, QObject * parent) :
     QObject(parent)
 {
-    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_adapters.append(new WifiAdapter(this, context, parent));
-
-    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Network::onConnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Network::onDisconnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Network::onMessageReceived);
-
     m_adapters.append(new WiredAdapter(this, context, parent));
 }
 
@@ -48,6 +36,7 @@ Network::~Network()
 
 void Network::connect(QString service)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -59,10 +48,12 @@ void Network::connect(QString service)
 
     nmsg->createRequest("network-manager", "connect_service", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::disconnect(QString service)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -74,10 +65,12 @@ void Network::disconnect(QString service)
 
     nmsg->createRequest("network-manager", "disconnect_service", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::remove(QString service)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -89,6 +82,7 @@ void Network::remove(QString service)
 
     nmsg->createRequest("network-manager", "remove_service", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::power(bool on, QString type)
@@ -101,6 +95,7 @@ void Network::power(bool on, QString type)
 
 void Network::input(int id, QString passphrase)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -114,10 +109,12 @@ void Network::input(int id, QString passphrase)
 
     nmsg->createRequest("network-manager", "agent_response", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::configureAddress(QString service, QVariantList paramlist)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -141,10 +138,12 @@ void Network::configureAddress(QString service, QVariantList paramlist)
 
     nmsg->createRequest("network-manager", "set_property", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::configureNameServer(QString service, QVariantList paramlist)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -167,10 +166,12 @@ void Network::configureNameServer(QString service, QVariantList paramlist)
 
     nmsg->createRequest("network-manager", "set_property", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::getServices()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -180,6 +181,7 @@ void Network::getServices()
 
     nmsg->createRequest("network-manager", "services", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 AdapterIf* Network::findAdapter(QString type)
@@ -193,32 +195,36 @@ AdapterIf* Network::findAdapter(QString type)
 
 void Network::updateServiceProperties(QJsonObject data)
 {
+#if 0
     QString service = data.value("service").toString();
     QJsonObject properties = data.value("properties").toObject();
     QList<AdapterIf*>::iterator iter;
     for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
         (*iter)->updateProperties(service, properties);
-
+#endif
 }
 
 bool Network::addService(QJsonObject service)
 {
+#if 0
     QString id = service.value("service").toString();
     QJsonObject properties = service.value("properties").toObject();
     QList<AdapterIf*>::iterator iter;
     for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
         if ((*iter)->addService(id, properties))
             return true;
-
+#endif
     return false;
 }
 
 void Network::removeService(QJsonObject service)
 {
+#if 0
     QString id = service.value("service").toString();
     QList<AdapterIf*>::iterator iter;
     for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
         (*iter)->removeService(id);
+#endif
 }
 
 void Network::addServices(QJsonArray services)
@@ -229,6 +235,7 @@ void Network::addServices(QJsonArray services)
 
 void Network::scanServices(QString type)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -239,10 +246,12 @@ void Network::scanServices(QString type)
     parameter.insert("technology", type);
     nmsg->createRequest("network-manager", "scan_services", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::disableTechnology(QString type)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -253,10 +262,12 @@ void Network::disableTechnology(QString type)
     parameter.insert("technology", type);
     nmsg->createRequest("network-manager", "disable_technology", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::enableTechnology(QString type)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -267,10 +278,12 @@ void Network::enableTechnology(QString type)
     parameter.insert("technology", type);
     nmsg->createRequest("network-manager", "enable_technology", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Network::parseTechnologies(QJsonArray technologies)
 {
+#if 0
     for (auto value : technologies) {
         QJsonObject technology = value.toObject();
         QJsonObject properties = technology.value("properties").toObject();
@@ -280,10 +293,12 @@ void Network::parseTechnologies(QJsonArray technologies)
         if (adapter)
             adapter->updateStatus(properties);
     }
+#endif
 }
 
 void Network::getTechnologies()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -293,10 +308,13 @@ void Network::getTechnologies()
 
     nmsg->createRequest("network-manager", "technologies", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
+#if 0
 void Network::processEvent(std::shared_ptr<Message> msg)
 {
+
     std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
     QString ename = emsg->eventName();
     QString eapi = emsg->eventApi();
@@ -363,9 +381,11 @@ void Network::onMessageReceived(std::shared_ptr<Message> msg)
     else if (msg->isReply())
         processReply(msg);
 }
+#endif
 
 void Network::onConnected()
 {
+#if 0
     QStringListIterator eventIterator(events);
 
     while (eventIterator.hasNext()) {
@@ -379,12 +399,13 @@ void Network::onConnected()
         nmsg->createRequest("network-manager", "subscribe", parameter);
         m_mloop->sendMessage(std::move(msg));
     }
-
+#endif
     getTechnologies();
 }
 
 void Network::onDisconnected()
 {
+#if 0
     QStringListIterator eventIterator(events);
 
     while (eventIterator.hasNext()) {
@@ -397,6 +418,6 @@ void Network::onDisconnected()
         nmsg->createRequest("network-manager", "unsubscribe", parameter);
         m_mloop->sendMessage(std::move(msg));
     }
-
+#endif
     getTechnologies();
 }

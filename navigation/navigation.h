@@ -1,5 +1,5 @@
  /*
- * Copyright (C) 2019, 2020 Konsulko Group
+ * Copyright (C) 2019-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,14 @@
 
 #include <memory>
 #include <QObject>
-#include <QJsonArray>
 #include <QtQml/QQmlListProperty>
-
-class MessageEngine;
-class Message;
 
 class Navigation : public QObject
 {
     Q_OBJECT
 
     public:
-        explicit Navigation(QUrl &url, QObject * parent = Q_NULLPTR);
+        explicit Navigation(QObject * parent = Q_NULLPTR);
         virtual ~Navigation();
 
         Q_INVOKABLE void broadcastPosition(double lat, double lon, double drc, double dst);
@@ -46,10 +42,7 @@ class Navigation : public QObject
         void waypointsEvent(QVariantMap data);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
-
         // slots
-        void onMessageReceived(std::shared_ptr<Message> msg);
         void onConnected();
         void onDisconnected();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018,2020-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,6 @@
 #include <memory>
 #include <QObject>
 
-class MessageEngine;
-class Message;
-
 class Weather : public QObject
 {
 	Q_OBJECT
@@ -30,7 +27,7 @@ class Weather : public QObject
 	Q_PROPERTY(QString condition READ condition NOTIFY conditionChanged)
 
 	public:
-		explicit Weather(QUrl &url, QObject * parent = Q_NULLPTR);
+		explicit Weather(QObject * parent = Q_NULLPTR);
 		virtual ~Weather();
 
 		QString temperature() { return m_temperature; }
@@ -41,13 +38,11 @@ class Weather : public QObject
 		void conditionChanged(QString condition);
 
 	private:
-		std::shared_ptr<MessageEngine> m_mloop;
 		QString m_temperature;
 		QString m_condition;
 
 		void onConnected();
 		void onDisconnected();
-		void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // WEATHER_H

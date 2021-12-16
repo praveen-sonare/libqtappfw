@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,301 +16,248 @@
 
 #include <QDebug>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
+#include <bluez-glib.h>
+
 #include "bluetooth.h"
 #include "bluetoothmodel.h"
+#include "bluetootheventhandler.h"
 
 
-Bluetooth::Bluetooth (QUrl &url, QQmlContext *context, QObject * parent) :
-    QObject(parent),
-    m_context(context)
+Bluetooth::Bluetooth (bool register_agent, QQmlContext *context, QObject * parent) :
+	QObject(parent),
+	m_context(context),
+	m_agent(register_agent)
 {
-    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
-    m_bluetooth = new BluetoothModel();
-    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Bluetooth::onConnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Bluetooth::onDisconnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Bluetooth::onMessageReceived);
+	m_bluetooth = new BluetoothModel();
+	BluetoothModelFilter *m_model = new BluetoothModelFilter();
+	m_model->setSourceModel(m_bluetooth);
+	m_model->setFilterFixedString("true");
+	context->setContextProperty("BluetoothPairedModel", m_model);
 
-    BluetoothModelFilter *m_model = new BluetoothModelFilter();
-    m_model->setSourceModel(m_bluetooth);
-    m_model->setFilterFixedString("true");
-    context->setContextProperty("BluetoothPairedModel", m_model);
+	m_model = new BluetoothModelFilter();
+	m_model->setSourceModel(m_bluetooth);
+	m_model->setFilterFixedString("false");
+	context->setContextProperty("BluetoothDiscoveryModel", m_model);
 
-    m_model = new BluetoothModelFilter();
-    m_model->setSourceModel(m_bluetooth);
-    m_model->setFilterFixedString("false");
-    context->setContextProperty("BluetoothDiscoveryModel", m_model);
+	m_event_handler = new BluetoothEventHandler(this, register_agent);
 
-    uuids.insert("a2dp", "0000110a-0000-1000-8000-00805f9b34fb");
-    uuids.insert("avrcp", "0000110e-0000-1000-8000-00805f9b34fb");
-    uuids.insert("hfp", "0000111f-0000-1000-8000-00805f9b34fb");
+	uuids.insert("a2dp", "0000110a-0000-1000-8000-00805f9b34fb");
+	uuids.insert("avrcp", "0000110e-0000-1000-8000-00805f9b34fb");
+	uuids.insert("hfp", "0000111f-0000-1000-8000-00805f9b34fb");
 }
 
 Bluetooth::~Bluetooth()
 {
 }
 
-void Bluetooth::send_command(QString verb, QJsonObject parameter)
-{
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
-
-    CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
-    btmsg->createRequest("Bluetooth-Manager", verb, parameter);
-    m_mloop->sendMessage(std::move(msg));
-}
-
 void Bluetooth::setPower(bool state)
 {
-    QJsonObject parameter;
-    parameter.insert("powered", state ? "true" : "false");
-    send_command("adapter_state", parameter);
+	bluez_adapter_set_powered(NULL, state ? TRUE : FALSE);
 }
 
 void Bluetooth::setDiscoverable(bool state)
 {
-    QJsonObject parameter;
-    parameter.insert("discoverable", state ? "true" : "false");
-    send_command("adapter_state", parameter);
+	bluez_adapter_set_discoverable(NULL, state);
 
-    m_discoverable = state;
+	m_discoverable = state;
 
-    emit discoverableChanged();
+	emit discoverableChanged();
+}
+
+void Bluetooth::start()
+{
+	bluez_init(m_agent, m_agent, m_event_handler->init_cb, m_event_handler);	
 }
 
 void Bluetooth::discovery_command(bool state)
 {
-    QJsonObject parameter;
-    parameter.insert("discovery", state ? "true" : "false");
+	set_discovery_filter();
 
-    set_discovery_filter();
-
-    send_command("adapter_state", parameter);
+	bluez_adapter_set_discovery(NULL, state ? TRUE : FALSE);
 }
 
 void Bluetooth::start_discovery()
 {
-    discovery_command(true);
-
-    // temp workaround to list already discovered devices
-    send_command("managed_objects", QJsonObject());
+	discovery_command(true);
 }
 
 void Bluetooth::stop_discovery()
 {
-    discovery_command(false);
+	discovery_command(false);
 }
 
 void Bluetooth::remove_device(QString device)
 {
-    QJsonObject parameter;
-    parameter.insert("device", device);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
 
-    send_command("remove_device", parameter);
+	bluez_device_remove(device_cstr);
 }
 
 void Bluetooth::pair(QString device)
 {
-    QJsonObject parameter;
-    parameter.insert("device", device);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
 
-    send_command("pair", parameter);
+	bluez_device_pair(device_cstr, m_event_handler->device_pair_cb, m_event_handler);
 }
 
-void Bluetooth::cancel_pair(QString device)
+void Bluetooth::cancel_pair(void)
 {
-    send_command("cancel_pairing", QJsonObject());
+	bluez_cancel_pairing();
 }
 
 void Bluetooth::connect(QString device, QString uuid)
 {
-    QJsonObject parameter;
-    uuid = process_uuid(uuid);
-    parameter.insert("device", device);
-    parameter.insert("uuid", uuid);
-    send_command("connect", parameter);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
+
+	uuid = process_uuid(uuid);
+	QByteArray uuid_ba = uuid.toLocal8Bit();
+	const char *uuid_cstr = uuid_ba.data();
+
+	bluez_device_connect(device_cstr,
+			     uuid_cstr,
+			     m_event_handler->device_connect_cb, 
+			     m_event_handler); 
 }
 
 void Bluetooth::connect(QString device)
 {
-    QJsonObject parameter;
-    parameter.insert("device", device);
-    send_command("connect", parameter);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
+
+	bluez_device_connect(device_cstr,
+			     NULL,
+			     m_event_handler->device_connect_cb, 
+			     m_event_handler); 
 }
 
 void Bluetooth::disconnect(QString device, QString uuid)
 {
-    QJsonObject parameter;
-    uuid = process_uuid(uuid);
-    parameter.insert("device", device);
-    parameter.insert("uuid", uuid);
-    send_command("disconnect", parameter);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
+
+	uuid = process_uuid(uuid);
+	QByteArray uuid_ba = uuid.toLocal8Bit();
+	const char *uuid_cstr = uuid_ba.data();
+
+	bluez_device_disconnect(device_cstr, uuid_cstr);
 }
 
 void Bluetooth::disconnect(QString device)
 {
-    QJsonObject parameter;
-    parameter.insert("device", device);
-    send_command("disconnect", parameter);
+	QByteArray device_ba = device.toLocal8Bit();
+	const char *device_cstr = device_ba.data();
+
+	bluez_device_disconnect(device_cstr, NULL);
 }
 
 void Bluetooth::send_confirmation(int pincode)
 {
-    QJsonObject parameter;
-    parameter.insert("pincode", pincode);
-    send_command("confirm_pairing", parameter);
+	QString pincode_str;
+	pincode_str.setNum(pincode);
+	QByteArray pincode_ba = pincode_str.toLocal8Bit();
+	const char *pincode_cstr = pincode_ba.data();
+
+	bluez_confirm_pairing(pincode_cstr);
 }
 
-
-void Bluetooth::set_discovery_filter()
+void Bluetooth::init_adapter_state(QString adapter)
 {
-    QStringListIterator eventIterator(uuids.values());
-    QJsonObject parameter;
-    QJsonArray array;
-
-    while (eventIterator.hasNext())
-        array.push_back(eventIterator.next());
-
-    // send inital adapter state + discovery filter
-    parameter.insert("filter", array);
-    parameter.insert("transport", "bredr");
-    send_command("adapter_state", parameter);
-}
-
-void Bluetooth::onConnected()
-{
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        send_command("subscribe", parameter);
-    }
-
-    // send initial list
-    send_command("managed_objects", QJsonObject());
-
-    // get initial power state
-    send_command("adapter_state", QJsonObject());
-}
-
-void Bluetooth::onDisconnected()
-{
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        send_command("unsubscribe", parameter);
-    }
-}
-
-void Bluetooth::populateDeviceList(QJsonObject data)
-{
-    QJsonArray devices = data.value("devices").toArray();
-
-    m_bluetooth->removeAllDevices();
-
-    for (auto value : devices) {
-        BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, value.toObject());
-        m_bluetooth->addDevice(device);
-    }
-}
-
-void Bluetooth::processDeviceChangesEvent(QJsonObject data)
-{
-    QString action = data.value("action").toString();
-    QString id = data.value("device").toString();
-
-    if (id.isEmpty())
-        return;
-
-    BluetoothDevice *device = m_bluetooth->getDevice(id);
-    if (action == "removed") {
-        if (device != nullptr)
-            m_bluetooth->removeDevice(device);
-	return;
-    }
-
-    BluetoothDevice *ndevice = m_bluetooth->updateDeviceProperties(device, data);
-    if (ndevice == nullptr) {
-        qDebug() << "bt - failed to create device object with id: " << id;
-        return;
-    }
-    if (device == nullptr)  //device not previously in model
-        m_bluetooth->addDevice(ndevice);
-}
-
-void Bluetooth::processAdapterChangesEvent(QJsonObject data)
-{
-    QString action = data.value("action").toString();
-    if (action != "changed")
-        return;
-
-    QJsonObject properties = data.value("properties").toObject();
-    if (!properties.contains("powered"))
-        return;
-
-    bool powered = properties.find("powered").value().toBool();
-    if (!powered)
-        m_bluetooth->removeAllDevices();
-
-    if (m_power != powered) {
-        m_power = powered;
-        emit powerChanged(powered);
-    }
-
-    if (!m_power)
-        m_discoverable = false;
-}
-
-void Bluetooth::onMessageReceived(std::shared_ptr<Message> msg)
-{
-    if (!msg)
-        return;
-
-    if (msg->isEvent()) {
-        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
-        QString ename = emsg->eventName();
-        QString eapi = emsg->eventApi();
-        QJsonObject data = emsg->eventData();
-        if (eapi != "Bluetooth-Manager")
-            return;
-        if (ename == "device_changes") {
-            processDeviceChangesEvent(data);
-        } else if (ename == "adapter_changes") {
-            processAdapterChangesEvent(data);
-        } else if (ename == "agent") {
-            emit requestConfirmationEvent(data);
+	// Get initial power state
+	GVariant *reply = NULL;
+	gboolean rc = bluez_adapter_get_state(NULL, &reply);
+	if (rc && reply) {
+		GVariantDict *props_dict = g_variant_dict_new(reply);
+		gboolean powered = FALSE;
+	        if (g_variant_dict_lookup(props_dict, "Powered", "b", &powered)) {
+			if (m_power != powered) {
+				m_power = powered;
+				emit powerChanged(m_power);
+			}
+		}
+		g_variant_dict_unref(props_dict);
+		g_variant_unref(reply);
         }
-    } else if (msg->isReply()) {
-        std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
-        QString verb = rmsg->requestVerb();
-        QJsonObject data = rmsg->replyData();
-        if (rmsg->requestApi() != "Bluetooth-Manager")
-            return;
 
-        if (rmsg->replyStatus() == "failed") {
-            qDebug() << "failed bt verb:" << verb;
-            if (rmsg->replyInfo().contains("No adapter")) {
-                m_power = false;
-                emit powerChanged(m_power);
-            }
-        }
-        else if (verb == "managed_objects") {
-            populateDeviceList(data);
-        } else if (verb == "adapter_state") {
-            bool powered = data.value("powered").toBool();
-            if (m_power != powered) {
-                m_power = powered;
-                emit powerChanged(m_power);
-            }
-        }
-    }
+	// Get initial device list
+	refresh_device_list();
+}
+
+void Bluetooth::refresh_device_list(void)
+{
+	gboolean rc;
+	GVariant *reply = NULL;
+
+	rc = bluez_adapter_get_devices(NULL, &reply);
+	if(!rc)
+		return;
+
+	m_bluetooth->removeAllDevices();
+
+	GVariantIter *array = NULL;
+	g_variant_get(reply, "a{sv}", &array);
+	const gchar *key = NULL;
+	GVariant *var = NULL;
+	while (g_variant_iter_next(array, "{&sv}", &key, &var)) {
+		BluetoothDevice *device = m_bluetooth->updateDeviceProperties(nullptr, key, var);
+		if (device)
+			m_bluetooth->addDevice(device);
+
+		g_variant_unref(var);
+	}
+	g_variant_iter_free(array);
+	g_variant_unref(reply);
+}
+
+void Bluetooth::set_discovery_filter(void)
+{
+	QList<QString> values = uuids.values();
+	QStringListIterator eventIterator(values);
+
+	gchar **uuids_array = (gchar**) g_malloc0((values.count() + 1) * sizeof(gchar*));
+	int i = 0;
+	while (eventIterator.hasNext()) {
+		QByteArray uuid_ba = eventIterator.next().toLocal8Bit();
+		gchar *uuid_cstr = g_strdup(uuid_ba.data());
+		uuids_array[i++] = uuid_cstr;
+	}
+
+	gchar *transport = g_strdup("bredr");
+	bluez_adapter_set_discovery_filter(NULL, uuids_array, transport);
+
+	for (i = 0; i < values.count(); i++)
+		g_free(uuids_array[i]);
+	g_free(uuids_array);
+	g_free(transport);
+}
+
+void Bluetooth::update_adapter_power(bool powered)
+{
+	if (!powered)
+		m_bluetooth->removeAllDevices();
+
+	if (m_power != powered) {
+		m_power = powered;
+		emit powerChanged(powered);
+
+		if (powered)
+			refresh_device_list();
+	}
+
+
+	if (!m_power) {
+		bool discoverable = m_discoverable;
+		m_discoverable = false;
+		if (discoverable != m_discoverable)
+			emit discoverableChanged();
+	}
+}
+
+void Bluetooth::request_confirmation(int pincode)
+{
+	QString pincode_str;
+	pincode_str.setNum(pincode);
+	emit requestConfirmationEvent(pincode_str);
 }

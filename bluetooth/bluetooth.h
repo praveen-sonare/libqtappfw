@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,10 @@
 
 #include <memory>
 #include <QObject>
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QtQml/QQmlContext>
 
 class BluetoothModel;
-class MessageEngine;
-class Message;
+class BluetoothEventHandler;
 
 class Bluetooth : public QObject
 {
@@ -34,18 +31,20 @@ class Bluetooth : public QObject
     Q_PROPERTY(bool discoverable READ discoverable WRITE setDiscoverable NOTIFY discoverableChanged)
 
     public:
-        explicit Bluetooth(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
+	explicit Bluetooth(bool register_agent, QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Bluetooth();
 
         void setPower(bool);
         void setDiscoverable(bool);
+
+        Q_INVOKABLE void start(void);
 
         Q_INVOKABLE void start_discovery(void);
         Q_INVOKABLE void stop_discovery(void);
 
         Q_INVOKABLE void remove_device(QString device);
         Q_INVOKABLE void pair(QString device);
-        Q_INVOKABLE void cancel_pair(QString device);
+        Q_INVOKABLE void cancel_pair(void);
 
         Q_INVOKABLE void connect(QString device, QString uuid);
         Q_INVOKABLE void connect(QString device);
@@ -62,24 +61,21 @@ class Bluetooth : public QObject
         void powerChanged(bool state);
         void discoverableChanged();
 
-        void connectionEvent(QJsonObject data);
-        void requestConfirmationEvent(QJsonObject data);
+	//void connectionEvent(QJsonObject data);
+	void requestConfirmationEvent(QString pincode);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         BluetoothModel *m_bluetooth;
-        void send_command(QString, QJsonObject);
-        void set_discovery_filter();
-        void discovery_command(bool);
-        void populateDeviceList(QJsonObject data);
-        void processDeviceChangesEvent(QJsonObject data);
-        void processAdapterChangesEvent(QJsonObject data);
+        BluetoothEventHandler *m_event_handler;
+	bool m_agent;
 
-        // slots
-        void onConnected();
-        void onDisconnected();
-        void onMessageReceived(std::shared_ptr<Message>);
+	void init_adapter_state(QString);
+	void refresh_device_list(void);
+        void set_discovery_filter(void);
+        void discovery_command(bool);
+	void update_adapter_power(bool);
+	void request_confirmation(int);
 
         QString process_uuid(QString uuid) { if (uuid.length() == 36) return uuid; return uuids.value(uuid); };
 
@@ -89,11 +85,7 @@ class Bluetooth : public QObject
 
         QMap<QString, QString> uuids;
 
-        const QStringList events {
-            "adapter_changes",
-            "device_changes",
-            "agent",
-        };
+	friend class BluetoothEventHandler;
 };
 
 #endif // BLUETOOTH_H

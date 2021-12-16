@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Konsulko Group
+ * Copyright (C) 2020-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,6 @@
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
-class MessageEngine;
-class Message;
-
 class HVAC : public QObject
 {
     Q_OBJECT
@@ -35,7 +32,7 @@ class HVAC : public QObject
     Q_PROPERTY(int rightTemperature READ get_temp_right_zone WRITE set_temp_right_zone NOTIFY rightTemperatureChanged)
 
     public:
-        explicit HVAC(QUrl &url, QObject * parent = Q_NULLPTR);
+        explicit HVAC(QObject * parent = Q_NULLPTR);
         virtual ~HVAC();
 
     signals:
@@ -45,8 +42,6 @@ class HVAC : public QObject
         void languageChanged(QString language);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
-
         int m_fanspeed;
         int m_temp_left_zone;
         int m_temp_right_zone;
@@ -59,9 +54,6 @@ class HVAC : public QObject
         void set_fanspeed(int speed);
         void set_temp_left_zone(int temp);
         void set_temp_right_zone(int temp);
-
-        // slots
-        void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // HVAC_H

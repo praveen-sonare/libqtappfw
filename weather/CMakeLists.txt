@@ -8,7 +8,7 @@ add_library(qtappfw-weather SHARED weather.cpp)
 target_include_directories(qtappfw-weather PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-weather PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-weather qtappfw-core)
+target_link_libraries(qtappfw-weather Qt5::Qml)
 set_target_properties(qtappfw-weather PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

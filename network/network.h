@@ -1,5 +1,5 @@
  /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2021 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,19 @@
 #include <memory>
 #include <QObject>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
 #include "wifiadapter.h"
 #include "wiredadapter.h"
 
-class MessageEngine;
-class Message;
-
 class Network : public QObject
 {
     Q_OBJECT
 
     public:
-        explicit Network(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
+        explicit Network(bool register_agent, QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Network();
 
         Q_INVOKABLE void connect(QString service);
@@ -54,7 +52,6 @@ class Network : public QObject
         void searchResults(QString name);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         QList<AdapterIf*> m_adapters;
 
@@ -69,11 +66,8 @@ class Network : public QObject
         void enableTechnology(QString type);
         void parseTechnologies(QJsonArray technologies);
         void getTechnologies();
-        void processEvent(std::shared_ptr<Message> msg);
-        void processReply(std::shared_ptr<Message> msg);
 
         // slots
-        void onMessageReceived(std::shared_ptr<Message>);
         void onConnected();
         void onDisconnected();
 
