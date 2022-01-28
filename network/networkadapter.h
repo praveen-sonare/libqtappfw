@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 
 #include <QDebug>
 #include <QObject>
-#include <QJsonArray>
 #include <QtQml/QQmlContext>
 
 class Network;
@@ -31,12 +30,12 @@ class AdapterIf
     public:
         virtual ~AdapterIf() {};
 
-        virtual bool addService(QString id, QJsonObject properties) = 0;
-        virtual void removeService(QString id) = 0;
-        virtual void updateProperties(QString service, QJsonObject properties) = 0;
+        virtual bool addService(QString const &id, QVariantMap const &properties) = 0;
+        virtual void removeService(QString const &id) = 0;
+        virtual void updateProperties(QString const &service, QVariantMap const &properties) = 0;
 
         virtual QString getType() = 0;
-        virtual void updateStatus(QJsonObject properties) = 0;
+        virtual void updateStatus(QVariantMap const &properties) = 0;
 };
 Q_DECLARE_INTERFACE(AdapterIf, "AdapterIf")
 

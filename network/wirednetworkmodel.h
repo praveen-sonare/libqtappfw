@@ -5,16 +5,16 @@
 
 class WiredNetworkModel : public AbstractNetworkModel
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    public:
+public:
         enum WiredNetworkRoles {
-            AddressRole = Qt::UserRole + 1,
-            SecurityRole,
-            ServiceRole,
-            StateRole,
-            RouteRole,
-            NameServerRole,
+		AddressRole = Qt::UserRole + 1,
+		SecurityRole,
+		ServiceRole,
+		StateRole,
+		RouteRole,
+		NameServerRole,
         };
 
         WiredNetworkModel(QObject *parent = Q_NULLPTR);
@@ -23,9 +23,9 @@ class WiredNetworkModel : public AbstractNetworkModel
         Q_INVOKABLE QVariantList readCurrentNameServerConfig(const QModelIndex &index) const;
         QString getType() const override { return "wired"; }
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-        void updateProperties(QString service, QJsonObject properties) override;
+        void updateProperties(const QString &service, const QVariantMap &properties) override;
 
-    protected:
+protected:
         QHash<int, QByteArray> roleNames() const;
 
 };

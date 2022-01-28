@@ -19,66 +19,56 @@
 
 #include <memory>
 #include <QObject>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
-#include "wifiadapter.h"
-#include "wiredadapter.h"
+class NetworkEventHandler;
+class AdapterIf;
 
 class Network : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    public:
-        explicit Network(bool register_agent, QQmlContext *context, QObject * parent = Q_NULLPTR);
-        virtual ~Network();
+public:
+	explicit Network(bool register_agent, QQmlContext *context, QObject * parent = Q_NULLPTR);
+	virtual ~Network();
 
-        Q_INVOKABLE void connect(QString service);
-        Q_INVOKABLE void disconnect(QString service);
-        Q_INVOKABLE void remove(QString service);
-        Q_INVOKABLE void power(bool on, QString type = "wifi");
-        Q_INVOKABLE void input(int id, QString passphrase);
-        Q_INVOKABLE void configureAddress(QString service, QVariantList paramlist);
-        Q_INVOKABLE void configureNameServer(QString service, QVariantList paramlist);
+	Q_INVOKABLE void connect(QString service);
+	Q_INVOKABLE void disconnect(QString service);
+	Q_INVOKABLE void remove(QString service);
+	Q_INVOKABLE void power(bool on, QString type = "wifi");
+	Q_INVOKABLE void input(int id, QString passphrase);
+	Q_INVOKABLE void configureAddress(QString service, QVariantList paramlist);
+	Q_INVOKABLE void configureNameServer(QString service, QVariantList paramlist);
 
-        void getServices();
-        AdapterIf* findAdapter(QString type);
+	AdapterIf* findAdapter(const QString &technology);
+	void getServices();
 
-    signals:
-        void inputRequest(int id);
-        void invalidPassphrase(QString service);
-        void searchResults(QString name);
+signals:
+	void inputRequest(int id);
+	void invalidPassphrase(const QString &service);
+	void searchResults(const QString &name);
 
-    private:
-        QQmlContext *m_context;
-        QList<AdapterIf*> m_adapters;
+private:
+	NetworkEventHandler *m_event_handler;
+	bool m_agent;
+	QList<AdapterIf*> m_adapters;
 
-        void updateServiceProperties(QJsonObject data);
-        bool addService(QJsonObject service);
-        void removeService(QJsonObject remove);
+	void scanServices(const QString &technology);
+	void disableTechnology(const QString &technology);
+	void enableTechnology(const QString &technology);
+	void getTechnologies();
 
-        void addServices(QJsonArray services);
+	friend class NetworkEventHandler;
 
-        void scanServices(QString type);
-        void disableTechnology(QString type);
-        void enableTechnology(QString type);
-        void parseTechnologies(QJsonArray technologies);
-        void getTechnologies();
-
-        // slots
-        void onConnected();
-        void onDisconnected();
-
-        const QStringList events {
-            "agent",
-            "global_state",
-            "services",
-            "service_properties",
-            "technologies",
-            "technology_properties",
-        };
+private slots:
+	// Invoked by NetworkEventHandler signals to drive model updates on UI thread
+	void updateAdapterStatus(const QString &technology, const QVariantMap &properties);
+	void updateServiceProperties(const QString &service, const QVariantMap &properties);
+	void addService(const QString &service, const QVariantMap &properties);
+	void removeService(const QString &service);
+	void requestInput(int id, const QVariantMap &properties);
+	void handleConnectResponse(const QString &service, bool status, const QString &error);
 };
 
 #endif // NETWORK_H

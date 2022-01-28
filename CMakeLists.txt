@@ -11,7 +11,7 @@ find_package(Qt5Qml REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 pkg_check_modules(bluez_glib REQUIRED IMPORTED_TARGET bluez-glib)
-#pkg_check_modules(connman_glib REQUIRED IMPORTED_TARGET connman-glib)
+pkg_check_modules(connman_glib REQUIRED IMPORTED_TARGET connman-glib)
 
 include(GNUInstallDirs)
 

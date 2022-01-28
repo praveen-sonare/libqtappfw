@@ -5,28 +5,28 @@
 
 class WifiNetworkModel : public AbstractNetworkModel
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    public:
+public:
         enum WifiNetworkRoles {
-            AddressRole = Qt::UserRole + 1,
-            SecurityRole,
-            ServiceRole,
-            StateRole,
-            SsidRole,
-            StrengthRole
+		AddressRole = Qt::UserRole + 1,
+		SecurityRole,
+		ServiceRole,
+		StateRole,
+		SsidRole,
+		StrengthRole
         };
 
         WifiNetworkModel(QObject *parent = Q_NULLPTR);
 
         QString getType() const override { return "wifi"; }
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-        void updateProperties(QString service, QJsonObject properties) override;
+        void updateProperties(const QString &service, const QVariantMap &properties) override;
 
-    signals:
+signals:
         void strengthChanged(int strength);
 
-    protected:
+protected:
         QHash<int, QByteArray> roleNames() const;
 
 };

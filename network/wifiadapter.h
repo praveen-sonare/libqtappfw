@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,21 @@
 
 #include <QDebug>
 #include <QObject>
-#include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include "networkadapter.h"
 
 class Network;
 class WifiNetworkModel;
 
-
 class WifiAdapter : public QObject, public AdapterIf
 {
-    Q_OBJECT
-    Q_INTERFACES(AdapterIf)
-    Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
-    Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
-    Q_PROPERTY(int wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
+	Q_OBJECT
+	Q_INTERFACES(AdapterIf)
+	Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
+	Q_PROPERTY(bool wifiEnabled READ wifiEnabled NOTIFY wifiEnabledChanged)
+	Q_PROPERTY(int wifiStrength READ wifiStrength NOTIFY wifiStrengthChanged)
 
-    public:
+public:
         explicit WifiAdapter(Network *network, QQmlContext *context, QObject *parent);
         virtual ~WifiAdapter();
 
@@ -43,22 +41,21 @@ class WifiAdapter : public QObject, public AdapterIf
         bool wifiEnabled() const { return m_wifiEnabled; }
         int wifiStrength() const { return m_wifiStrength; }
 
-        bool addService(QString id, QJsonObject properties) override;
-        void removeService(QString id) override;
-        void updateProperties(QString service, QJsonObject properties) override;
+        bool addService(const QString &id, const QVariantMap &properties) override;
+        void removeService(const QString &id) override;
+        void updateProperties(const QString &service, const QVariantMap &properties) override;
 
         QString getType() override { return "wifi"; }
-        void updateStatus(QJsonObject properties) override;
+        void updateStatus(const QVariantMap &properties) override;
 
-    //slots
         void updateWifiStrength(int);
 
-    signals:
+signals:
         void wifiConnectedChanged(bool connected);
         void wifiEnabledChanged(bool enabled);
         void wifiStrengthChanged(int strength);
 
-    private:
+private:
         bool m_wifiConnected;
         bool m_wifiEnabled;
         int m_wifiStrength;

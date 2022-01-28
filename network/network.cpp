@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Konsulko Group
+ * Copyright (C) 2018-2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,408 +16,316 @@
 
 #include <QDebug>
 #include <QtQml/QQmlEngine>
+#include <QThread>
+#include <connman-glib.h>
 
-#include "networkadapter.h"
+#include "wifiadapter.h"
+#include "wiredadapter.h"
 #include "network.h"
+#include "networkeventhandler.h"
 
-
-Network::Network (bool register_agent, QQmlContext *context, QObject * parent) :
-    QObject(parent)
+Network::Network(bool register_agent, QQmlContext *context, QObject * parent) :
+	QObject(parent),
+	m_agent(register_agent)
 {
-    m_adapters.append(new WifiAdapter(this, context, parent));
-    m_adapters.append(new WiredAdapter(this, context, parent));
+	m_adapters.append(new WifiAdapter(this, context, parent));
+	m_adapters.append(new WiredAdapter(this, context, parent));
+
+	m_event_handler = new NetworkEventHandler(this, register_agent, context, parent);
+
+	// Hook up signals so updates can be made to happen from the UI thread as Qt requires
+	QObject::connect(m_event_handler, &NetworkEventHandler::adapterStatusChanged, this, &Network::updateAdapterStatus, Qt::QueuedConnection);
+	QObject::connect(m_event_handler, &NetworkEventHandler::servicePropertiesChanged, this, &Network::updateServiceProperties, Qt::QueuedConnection);
+	QObject::connect(m_event_handler, &NetworkEventHandler::serviceAdded, this, &Network::addService, Qt::QueuedConnection);
+	QObject::connect(m_event_handler, &NetworkEventHandler::serviceRemoved, this, &Network::removeService, Qt::QueuedConnection);
+	QObject::connect(m_event_handler, &NetworkEventHandler::inputRequested, this, &Network::requestInput, Qt::QueuedConnection);
+	QObject::connect(m_event_handler, &NetworkEventHandler::connectResponseReceived, this, &Network::handleConnectResponse, Qt::QueuedConnection);
+
+	connman_init(register_agent);
+
+	getTechnologies();
 }
 
 Network::~Network()
 {
-    while (!m_adapters.isEmpty())
-        m_adapters.takeLast();
+	while (!m_adapters.isEmpty())
+		m_adapters.takeLast();
 }
 
 void Network::connect(QString service)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	QByteArray service_ba = service.toLocal8Bit();
+	const char *service_cstr = service_ba.data();
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("service", service);
-
-    nmsg->createRequest("network-manager", "connect_service", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	connman_service_connect(service_cstr, m_event_handler->service_connect_cb, m_event_handler);
 }
 
 void Network::disconnect(QString service)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	QByteArray service_ba = service.toLocal8Bit();
+	const char *service_cstr = service_ba.data();
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("service", service);
-
-    nmsg->createRequest("network-manager", "disconnect_service", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	connman_service_disconnect(service_cstr);
 }
 
 void Network::remove(QString service)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	QByteArray service_ba = service.toLocal8Bit();
+	const char *service_cstr = service_ba.data();
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("service", service);
-
-    nmsg->createRequest("network-manager", "remove_service", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	connman_service_remove(service_cstr);
 }
 
 void Network::power(bool on, QString type)
 {
-    if (on)
-        enableTechnology(type);
-    else
-        disableTechnology(type);
+	if (on)
+		enableTechnology(type);
+	else
+		disableTechnology(type);
 }
 
 void Network::input(int id, QString passphrase)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	QByteArray passphrase_ba = passphrase.toLocal8Bit();
+	const char *passphrase_cstr = passphrase_ba.data();
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter, fields;
+	// e.g. ({'Passphrase': <'foo'>},)
+	GVariantBuilder builder;
+	g_variant_builder_init(&builder, G_VARIANT_TYPE("a{sv}"));
+	g_variant_builder_add(&builder,
+			      "{sv}",
+			      "Passphrase",
+			      g_variant_new_string(passphrase_cstr));
 
-    parameter.insert("id", id);
-    fields.insert("passphrase", passphrase);
-    parameter.insert("fields", fields);
+	// Wrap in required tuple
+	GVariantBuilder builder2;
+	g_variant_builder_init(&builder2, G_VARIANT_TYPE_TUPLE);
+	g_variant_builder_add_value(&builder2,
+				    g_variant_builder_end(&builder));
+	GVariant *parameters = g_variant_builder_end(&builder2);
 
-    nmsg->createRequest("network-manager", "agent_response", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	if (parameters) {
+		connman_agent_response(id, parameters);
+	} else {
+		qWarning() << "Could not build response for input request " << id;
+	}
 }
 
 void Network::configureAddress(QString service, QVariantList paramlist)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	if (service.isEmpty() || paramlist.size() < 4) {
+		qWarning("Invalid addressing params");
+		return;
+	}
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter, type, properties;
-    QJsonArray  values = QJsonArray::fromVariantList(paramlist);
+	QByteArray path_ba = service.toLocal8Bit();
 
-    if (values.isEmpty() || values.count() < 4) {
-        qWarning("Invalid addressing params");
-        return;
-    }
+	GVariantDict *params_dict = g_variant_dict_new(NULL);
+	if (!params_dict) {
+		qWarning() << "g_variant_dict_new failed";
+		return;
+	}
 
-    properties.insert("method", values[0]);
-    properties.insert("address", values[1]);
-    properties.insert("netmask", values[2]);
-    properties.insert("gateway", values[3]);
-    type.insert("ipv4.configuration", properties);
-    parameter.insert("properties", type);
-    parameter.insert("service", service);
+	QByteArray param_ba = paramlist[0].toString().toLocal8Bit();
+	g_variant_dict_insert(params_dict, "Method", "s", param_ba.data());
+	param_ba = paramlist[1].toString().toLocal8Bit();
+	g_variant_dict_insert(params_dict, "Address", "s", param_ba.data());
+	param_ba = paramlist[2].toString().toLocal8Bit();
+	g_variant_dict_insert(params_dict, "Netmask", "s", param_ba.data());
+	param_ba = paramlist[3].toString().toLocal8Bit();
+	g_variant_dict_insert(params_dict, "Gateway", "s", param_ba.data());
+	GVariant *parameters = g_variant_dict_end(params_dict);
+	g_variant_dict_unref(params_dict);
 
-    nmsg->createRequest("network-manager", "set_property", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	// Need to end up with something like:
+	// - path = ethernet_525400123502_cable
+	// - name = IPv4.Configuration
+	// - parameters = {'Method': <'manual'>, 'Gateway': <'10.0.2.2'>, 'Address': <'10.0.2.15'>, 'Netmask': <'255.255.255'>}
+	if (!connman_set_property(CONNMAN_PROPERTY_SERVICE,
+				  path_ba.data(),
+				  "IPv4.Configuration",
+				  parameters)) {
+		qWarning() << "Could not configure address";
+	}
 }
 
 void Network::configureNameServer(QString service, QVariantList paramlist)
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	// paramlist will be 'manual|auto', 'server1'...
+	// NOTE: currently unclear what should happen for 'auto' case
+	if (service.isEmpty() || paramlist.size() < 2) {
+		qWarning("Invalid nameserver params");
+		return;
+	}
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter, properties;
-    QJsonArray  values = QJsonArray::fromVariantList(paramlist);
+	QByteArray path_ba = service.toLocal8Bit();
 
-    if (values.isEmpty() || values.count() < 2) {
-        qWarning("Invalid nameserver params");
-        return;
-    }
+	QStringList nslist = paramlist[1].toString().split(' ');
+	GVariantBuilder builder;
+	g_variant_builder_init(&builder, G_VARIANT_TYPE("as"));
+	QStringList::const_iterator iter;
+	for (iter = nslist.constBegin(); iter != nslist.constEnd(); ++iter) {
+		g_variant_builder_add(&builder,
+				      "s",
+				      (*iter).toLocal8Bit().constData());
+	}
+	GVariant *parameters = g_variant_builder_end(&builder);
 
-    QStringList nslist = values[1].toString().split(' ');
-    QJsonArray nameservers = QJsonArray::fromStringList(nslist);
-
-    properties.insert("nameservers.configuration", nameservers);
-    parameter.insert("properties", properties);
-    parameter.insert("service", service);
-
-    nmsg->createRequest("network-manager", "set_property", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	// Need to end up with something like:
+	// - path = ethernet_525400123502_cable
+	// - name = Nameservers.Configuration
+	// - value = ['8.8.8.8.8'] 
+	if (!connman_set_property(CONNMAN_PROPERTY_SERVICE,
+				  path_ba.data(),
+				  "Nameservers.Configuration",
+				  parameters)) {
+		qWarning() << "Could not configure nameserver";
+	}
 }
 
 void Network::getServices()
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	GVariant *reply = NULL;
+	if(!connman_get_services(&reply)) {
+		qWarning() << "Network::getServices: connman_get_services failed!";
+		return;
+	}
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    nmsg->createRequest("network-manager", "services", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	GVariantIter *array = NULL;
+	g_variant_get(reply, "(a(oa{sv}))", &array);
+	const gchar *path = NULL;
+	GVariant *var = NULL;
+	while (g_variant_iter_next(array, "(o@a{sv})", &path, &var)) {
+		QString id = path;
+		id = id.mid(id.lastIndexOf("/") + 1);
+		QVariantMap props_map;
+		if (m_event_handler->populateServiceProperties(var, props_map)) {
+			QList<AdapterIf*>::iterator iter;
+			for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+				if ((*iter)->addService(id, props_map))
+					break;
+		}
+		g_variant_unref(var);
+	}
+	g_variant_iter_free(array);
+	g_variant_unref(reply);
 }
 
-AdapterIf* Network::findAdapter(QString type)
+AdapterIf* Network::findAdapter(const QString &type)
 {
-    QList<AdapterIf*>::iterator iter;
-    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
-        if  ((*iter)->getType() == type)
-            return (*iter);
-    return nullptr;
+	QList<AdapterIf*>::iterator iter;
+	for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+		if  ((*iter)->getType() == type)
+			return (*iter);
+	return nullptr;
 }
 
-void Network::updateServiceProperties(QJsonObject data)
+void Network::scanServices(const QString &technology)
 {
-#if 0
-    QString service = data.value("service").toString();
-    QJsonObject properties = data.value("properties").toObject();
-    QList<AdapterIf*>::iterator iter;
-    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
-        (*iter)->updateProperties(service, properties);
-#endif
+	QByteArray technology_ba = technology.toLocal8Bit();
+	const char *technology_cstr = technology_ba.data();
+
+	connman_technology_scan_services(technology_cstr);
 }
 
-bool Network::addService(QJsonObject service)
+void Network::disableTechnology(const QString &technology)
 {
-#if 0
-    QString id = service.value("service").toString();
-    QJsonObject properties = service.value("properties").toObject();
-    QList<AdapterIf*>::iterator iter;
-    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
-        if ((*iter)->addService(id, properties))
-            return true;
-#endif
-    return false;
+	QByteArray technology_ba = technology.toLocal8Bit();
+	const char *technology_cstr = technology_ba.data();
+
+	connman_technology_disable(technology_cstr);
 }
 
-void Network::removeService(QJsonObject service)
+void Network::enableTechnology(const QString &technology)
 {
-#if 0
-    QString id = service.value("service").toString();
-    QList<AdapterIf*>::iterator iter;
-    for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
-        (*iter)->removeService(id);
-#endif
-}
+	QByteArray technology_ba = technology.toLocal8Bit();
+	const char *technology_cstr = technology_ba.data();
 
-void Network::addServices(QJsonArray services)
-{
-    for (auto service : services)
-        addService(service.toObject());
-}
-
-void Network::scanServices(QString type)
-{
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
-
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("technology", type);
-    nmsg->createRequest("network-manager", "scan_services", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
-}
-
-void Network::disableTechnology(QString type)
-{
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
-
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("technology", type);
-    nmsg->createRequest("network-manager", "disable_technology", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
-}
-
-void Network::enableTechnology(QString type)
-{
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
-
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    parameter.insert("technology", type);
-    nmsg->createRequest("network-manager", "enable_technology", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
-}
-
-void Network::parseTechnologies(QJsonArray technologies)
-{
-#if 0
-    for (auto value : technologies) {
-        QJsonObject technology = value.toObject();
-        QJsonObject properties = technology.value("properties").toObject();
-        QString type = properties.value("type").toString();
-
-        AdapterIf* adapter = findAdapter(type);
-        if (adapter)
-            adapter->updateStatus(properties);
-    }
-#endif
+	connman_technology_enable(technology_cstr);
 }
 
 void Network::getTechnologies()
 {
-#if 0
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	GVariant *reply = NULL;
+	if(!connman_get_technologies(&reply))
+		return;
 
-    CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-    QJsonObject parameter;
-
-    nmsg->createRequest("network-manager", "technologies", parameter);
-    m_mloop->sendMessage(std::move(msg));
-#endif
+	GVariantIter *array = NULL;
+	g_variant_get(reply, "(a(oa{sv}))", &array);
+	if (!array) {
+		g_variant_unref(reply);
+		return;
+	}
+	const gchar *path = NULL;
+	GVariant *properties = NULL;
+	while (g_variant_iter_next(array, "(o@a{sv})", &path, &properties)) {
+		GVariantDict *props_dict = g_variant_dict_new(properties);
+		gchar *type_cstr = NULL;
+		if (g_variant_dict_lookup(props_dict, "Type", "s", &type_cstr)) {
+			QString type(type_cstr);
+			AdapterIf* adapter = findAdapter(type);
+			if (adapter) {
+				QVariantMap props_map;
+				if (m_event_handler->populateAdapterProperties(properties, props_map))
+					adapter->updateStatus(props_map);
+			}
+		}
+		g_variant_dict_unref(props_dict);
+		g_variant_unref(properties);
+	}
+	g_variant_iter_free(array);
+	g_variant_unref(reply);
 }
 
-#if 0
-void Network::processEvent(std::shared_ptr<Message> msg)
+void Network::updateAdapterStatus(const QString &technology, const QVariantMap &properties)
 {
-
-    std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
-    QString ename = emsg->eventName();
-    QString eapi = emsg->eventApi();
-    QJsonObject data = emsg->eventData();
-
-    if (eapi != "network-manager")
-        return;
-
-    if (ename == "agent") {
-        QJsonObject fields = data.value("fields").toObject();
-        QJsonObject passphrase = fields.value("passphrase").toObject();
-        QString type = passphrase.value("type").toString();
-        QString reqmt = passphrase.value("requirement").toString();
-        if (((type == "psk") || (type == "wep")) && (reqmt == "mandatory")) {
-            int id = data.value("id").toInt();
-            emit inputRequest(id);
-        }
-    } else if (ename == "services") {
-        QJsonArray services = data.value("values").toArray();
-        for (auto value : services) {
-            QJsonObject service = value.toObject();
-            QString action = service.value("action").toString();
-            if (action == "changed") {
-                addService(service);
-            } else if (action == "removed") {
-                 removeService(service);
-            }
-        }
-    } else if (ename == "service_properties") {
-        updateServiceProperties(data);
-    } else if (ename == "technology_properties") {
-        QJsonObject properties = data.value("properties").toObject();
-        QString type = data.value("technology").toString();
-        AdapterIf* adapter = findAdapter(type);
+        AdapterIf* adapter = findAdapter(technology);
         if (adapter)
-            adapter->updateStatus(properties);
-    }
+		adapter->updateStatus(properties);
 }
 
-void Network::processReply(std::shared_ptr<Message> msg)
+void Network::updateServiceProperties(const QString &service, const QVariantMap &properties)
 {
-    std::shared_ptr<ResponseMessage> rmsg = std::static_pointer_cast<ResponseMessage>(msg);
-    QString verb = rmsg->requestVerb();
-    QJsonObject data = rmsg->replyData();
+	QList<AdapterIf*>::iterator iter;
+	for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+		(*iter)->updateProperties(service, properties);
+}
 
-    if (verb == "services") {
-        addServices(data.value("values").toArray());
-    } else if (verb == "technologies") {
-        parseTechnologies(data.value("values").toArray());
-    } else if (verb == "connect_service") {
-        if (rmsg->replyStatus() == "failed" && rmsg->replyInfo().contains("invalid-key")) {
-            emit invalidPassphrase(rmsg->requestParameters()["service"].toString());
+void Network::addService(const QString &service, const QVariantMap &properties)
+{
+	QList<AdapterIf*>::iterator iter;
+	for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+		if ((*iter)->addService(service, properties))
+		  break;
+}
+
+void Network::removeService(const QString &service)
+{
+	QList<AdapterIf*>::iterator iter;
+	for (iter = m_adapters.begin(); iter != m_adapters.end(); ++iter)
+		(*iter)->removeService(service);
+}
+
+void Network::requestInput(int id, const QVariantMap &properties)
+{
+	QString type;
+	QString key = "Type";
+        if (properties.contains(key))
+		type = properties.value(key).toString();
+
+	QString reqmt;
+	key = "Requirement";
+        if (properties.contains(key))
+		reqmt = properties.value(key).toString();
+
+        if (((type == "psk") || (type == "wep")) && (reqmt == "mandatory")) {
+		emit inputRequest(id);
         }
-    }
 }
 
-void Network::onMessageReceived(std::shared_ptr<Message> msg)
+void Network::handleConnectResponse(const QString &service, bool status, const QString &error)
 {
-    if (!msg)
-        return;
-
-    if (msg->isEvent())
-        processEvent(msg);
-    else if (msg->isReply())
-        processReply(msg);
-}
-#endif
-
-void Network::onConnected()
-{
-#if 0
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-        if (!msg)
-            return;
-
-        CallMessage* nmsg = static_cast<CallMessage*>(msg.get());
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        nmsg->createRequest("network-manager", "subscribe", parameter);
-        m_mloop->sendMessage(std::move(msg));
-    }
-#endif
-    getTechnologies();
-}
-
-void Network::onDisconnected()
-{
-#if 0
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-        if (!msg)
-            return;
-        CallMessage *nmsg = static_cast<CallMessage*>(msg.get());
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        nmsg->createRequest("network-manager", "unsubscribe", parameter);
-        m_mloop->sendMessage(std::move(msg));
-    }
-#endif
-    getTechnologies();
+	if (!status && error.contains("invalid-key")) {
+		emit invalidPassphrase(service);
+	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,87 +19,138 @@
 #include <QtQml/QQmlEngine>
 
 #include "network.h"
-#include "networkadapter.h"
+#include "wiredadapter.h"
 #include "wirednetworkmodel.h"
 #include "connectionprofile.h"
 
 WiredAdapter::WiredAdapter(Network *network, QQmlContext *context, QObject *parent) :
-    QObject(parent),
-    AdapterIf(),
-    m_wiredConnected(false),
-    m_wiredEnabled(false),
-    m_model(nullptr),
-    nw(network)
+	QObject(parent),
+	AdapterIf(),
+	m_wiredConnected(false),
+	m_wiredEnabled(false),
+	m_model(nullptr),
+	nw(network)
 {
-    m_model = new WiredNetworkModel();
-    QSortFilterProxyModel *model = new QSortFilterProxyModel();
-    model->setSourceModel(m_model);
-    model->setSortRole(WiredNetworkModel::WiredNetworkRoles::ServiceRole);
-    model->setSortCaseSensitivity(Qt::CaseInsensitive);
-    model->sort(0);
+	m_model = new WiredNetworkModel();
+	QSortFilterProxyModel *model = new QSortFilterProxyModel();
+	model->setSourceModel(m_model);
+	model->setSortRole(WiredNetworkModel::WiredNetworkRoles::ServiceRole);
+	model->setSortCaseSensitivity(Qt::CaseInsensitive);
+	model->sort(0);
 
-    context->setContextProperty("WiredNetworkModel", m_model);
-    context->setContextProperty("WiredAdapter", this);
+	context->setContextProperty("WiredNetworkModel", m_model);
+	context->setContextProperty("WiredAdapter", this);
 }
 
 WiredAdapter::~WiredAdapter()
 {
-    delete m_model;
+	delete m_model;
 }
 
-void WiredAdapter::updateStatus(QJsonObject properties)
+void WiredAdapter::updateStatus(const QVariantMap &properties)
 {
-    if (properties.contains("connected")) {
-        m_wiredConnected = properties.value("connected").toBool();
-        emit wiredConnectedChanged(m_wiredConnected);
-    }
+	QString key = "Connected";
+        if (properties.contains(key)) {
+		m_wiredConnected = properties.value(key).toBool();
+		emit wiredConnectedChanged(m_wiredConnected);
+	}
 
-    if (properties.contains("powered")) {
-        m_wiredEnabled = properties.value("powered").toBool();
-        emit wiredEnabledChanged(m_wiredEnabled);
-        if (m_wiredEnabled)
-            nw->getServices();
-    }
+	key = "Powered";
+        if (properties.contains(key)) {
+		m_wiredEnabled = properties.value(key).toBool();
+		emit wiredEnabledChanged(m_wiredEnabled);
+		if (m_wiredEnabled)
+			nw->getServices();
+	}
 }
 
-void WiredAdapter::updateProperties(QString id, QJsonObject properties)
+void WiredAdapter::updateProperties(const QString &id, const QVariantMap &properties)
 {
-     if (m_model->getNetwork(id))
-         m_model->updateProperties(id, properties);
+	if (m_model->getNetwork(id))
+		m_model->updateProperties(id, properties);
 }
 
-bool WiredAdapter::addService(QString id, QJsonObject properties)
+bool WiredAdapter::addService(const QString &id, const QVariantMap &properties)
 {
-    QString type = properties.value("type").toString();
-    if (type != getType())
-        return false;
+	QString type;
+	QString key = "Type";
+        if (properties.contains(key)) {
+		type = properties.value(key).toString();
+		if (type != getType())
+			return false;
+	}
 
-    // Ignore services already added
-    if (m_model->getNetwork(id))
-        return false;
+	// Ignore services already added
+	if (m_model->getNetwork(id))
+		return false;
 
-    QString state = properties.value("state").toString();
-    // Initially support only IPv4 and the first security method found
-    QString security = properties.value("security").toArray().at(0).toString();
-    QJsonObject ipv4obj = properties.value("ipv4").toObject();
-    QString address = ipv4obj.value("address").toString();
-    QString netmask = ipv4obj.value("netmask").toString();
-    QString gateway = ipv4obj.value("gateway").toString();
-    QString amethod = ipv4obj.value("method").toString();
-    QString ns = properties.value("nameservers").toString();
-    QString nsmethod = (amethod == "dhcp")? "auto" : "manual";
+	QString state;
+	key = "State";
+        if (properties.contains(key))
+		state = properties.value(key).toString();
 
-    ConnectionProfile *network = new ConnectionProfile(address, security, id,
-                                                       state, "", 0, netmask,
-                                                       gateway, amethod, ns,
-                                                       nsmethod);
-    m_model->addNetwork(network);
+	// Initially support only IPv4 and the first security method found
+	QString address;
+	QString netmask;
+	QString gateway;
+	QString amethod;
+	key = "IPv4";
+        if (properties.contains(key)) {
+		QVariantMap ip4_map = properties.value(key).toMap();
 
-    return true;
+		key = "Address";
+		if (ip4_map.contains(key))
+			address = ip4_map.value(key).toString();
+
+		key = "Netmask";
+		if (ip4_map.contains(key))
+			netmask = ip4_map.value(key).toString();
+
+		key = "Gateway";
+		if (ip4_map.contains(key))
+			gateway = ip4_map.value(key).toString();
+
+		key = "Method";
+		if (ip4_map.contains(key))
+			amethod = ip4_map.value(key).toString();
+	}
+
+	QString ns;
+	key = "Nameservers";
+        if (properties.contains(key))
+		ns = properties.value(key).toString();
+	QString nsmethod = (amethod == "dhcp")? "auto" : "manual";
+
+	QString security;
+	key = "Security";
+        if (properties.contains(key)) {
+		QVariantList security_list = properties.value(key).toList();
+
+		if (!security_list.isEmpty())
+			security = security_list[0].toString();
+	}
+
+#if LIBQTAPPFW_NETWORK_DEBUG
+	qDebug() << "WiredAdapter::addService: address = " << address
+		 << ", id = " << id
+		 << ", state = " << state
+		 << ", netmask = " << netmask
+		 << ", gateway = " << gateway
+		 << ", address method = " << amethod
+		 << ", nameservers = " << ns
+		 << ", nameserver method = " << nsmethod
+		 << ", security = " << security;
+#endif
+	ConnectionProfile *network = new ConnectionProfile(address, security, id,
+							   state, "", 0, netmask,
+							   gateway, amethod, ns,
+							   nsmethod);
+	m_model->addNetwork(network);
+
+	return true;
 }
 
-void WiredAdapter::removeService(QString id)
+void WiredAdapter::removeService(const QString &id)
 {
-    m_model->removeNetwork(m_model->getNetwork(id));
-
+	m_model->removeNetwork(m_model->getNetwork(id));
 }

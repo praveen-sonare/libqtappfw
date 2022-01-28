@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Konsulko Group
+ * Copyright (C) 2019,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 
 #include <QDebug>
 #include <QObject>
-#include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include "networkadapter.h"
 
@@ -28,27 +27,27 @@ class WiredNetworkModel;
 
 class WiredAdapter : public QObject, public AdapterIf
 {
-    Q_OBJECT
-    Q_INTERFACES(AdapterIf)
-    public:
+	Q_OBJECT
+	Q_INTERFACES(AdapterIf)
+	public:
         explicit WiredAdapter(Network *network, QQmlContext *context, QObject *parent);
         virtual ~WiredAdapter();
 
         bool wiredConnected() const { return m_wiredConnected; }
         bool wiredEnabled() const { return m_wiredEnabled; }
 
-        bool addService(QString id, QJsonObject properties) override;
-        void removeService(QString id) override;
-        void updateProperties(QString service, QJsonObject properties) override;
+        bool addService(const QString &id, const QVariantMap &properties) override;
+        void removeService(const QString &id) override;
+        void updateProperties(const QString &service, const QVariantMap &properties) override;
 
         QString getType() override { return "ethernet"; }
-        void updateStatus(QJsonObject properties) override;
+        void updateStatus(const QVariantMap &properties) override;
 
-    signals:
+signals:
         void wiredConnectedChanged(bool connected);
         void wiredEnabledChanged(bool enabled);
 
-    private:
+private:
         bool m_wiredConnected;
         bool m_wiredEnabled;
         WiredNetworkModel *m_model;
