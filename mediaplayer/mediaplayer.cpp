@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,37 +15,34 @@
  */
 
 #include <QDebug>
+#include <QJsonObject>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "messageengine.h"
-#include "messagefactory.h"
-#include "messageenginefactory.h"
 #include "mediaplayer.h"
+#include "MediaplayerMpdBackend.h"
 
 
 Playlist::Playlist(QVariantMap &item)
 {
-    m_index = item["index"].toInt();
-    m_duration = item["duration"].toInt();
-    m_genre = item["genre"].toString();
-    m_path = item["path"].toString();
-    m_title = item["title"].toString();
-    m_album = item["album"].toString();
-    m_artist = item["artist"].toString();
+	m_index = item["index"].toInt();
+	m_duration = item["duration"].toInt();
+	m_genre = item["genre"].toString();
+	m_path = item["path"].toString();
+	m_title = item["title"].toString();
+	m_album = item["album"].toString();
+	m_artist = item["artist"].toString();
 }
 
 Playlist::~Playlist() {}
 
-Mediaplayer::Mediaplayer (QUrl &url, QQmlContext *context, QObject * parent) :
-    QObject(parent)
+Mediaplayer::Mediaplayer (QQmlContext *context, QObject * parent) :
+	QObject(parent)
 {
-    m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
-    m_context = context;
-    m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
-    QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Mediaplayer::onConnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Mediaplayer::onDisconnected);
-    QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Mediaplayer::onMessageReceived);
+	m_context = context;
+	m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
+
+	m_backend = new MediaplayerMpdBackend(this, context);
+	if (!m_backend)
+		qFatal("Could not create MediaPlayerBackend");
 }
 
 Mediaplayer::~Mediaplayer()
@@ -56,207 +53,129 @@ Mediaplayer::~Mediaplayer()
 
 void Mediaplayer::updatePlaylist(QVariantMap playlist)
 {
-    QVariantList list = playlist["list"].toList();
+	QVariantList list = playlist["list"].toList();
 
-    m_playlist.clear();
+	m_playlist.clear();
 
-    for (auto i : list) {
-        QVariantMap item = qvariant_cast<QVariantMap>(i);
-        m_playlist.append(new Playlist(item));
-    }
+	for (auto i : list) {
+		QVariantMap item = qvariant_cast<QVariantMap>(i);
+		m_playlist.append(new Playlist(item));
+	}
 
-    if (m_playlist.count() == 0) {
-        QVariantMap tmp, track;
+	if (m_playlist.count() == 0) {
+		QVariantMap tmp, track;
 
-        track.insert("title", "");
-        track.insert("artist", "");
-        track.insert("album", "");
-        track.insert("duration", 0);
+		track.insert("title", "");
+		track.insert("artist", "");
+		track.insert("album", "");
+		track.insert("duration", 0);
 
-        tmp.insert("position", 0);
-        tmp.insert("track", track);
+		tmp.insert("position", 0);
+		tmp.insert("track", track);
 
-        // clear metadata in UI
-        m_context->setContextProperty("AlbumArt", "");
-        emit metadataChanged(tmp);
-    }
+		// clear metadata in UI
+		m_context->setContextProperty("AlbumArt", "");
+		emit metadataChanged(tmp);
+	}
 
-    // Refresh model
-    m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
+	// Refresh model
+	m_context->setContextProperty("MediaplayerModel", QVariant::fromValue(m_playlist));
 }
 
-// Control Verb methods
-
-void Mediaplayer::control(QString control, QJsonObject parameter)
+void Mediaplayer::updateMetadata(QVariantMap metadata)
 {
-    std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-    if (!msg)
-        return;
+	if (metadata.contains("track")) {
+		QVariantMap track = metadata.value("track").toMap();
 
-    CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
-    parameter.insert("value", control);
+		if (track.contains("image")) {
+			m_context->setContextProperty("AlbumArt",
+						      QVariant::fromValue(track.value("image")));
+		}
+ 
+		if (!track.contains("artist")) {
+			track.insert("artist", "");
+			metadata["track"] = track;
+		}
+ 
+		if (!track.contains("album")) {
+			track.insert("album", "");
+			metadata["track"] = track;
+		}
+	}
 
-    mpmsg->createRequest("mediaplayer", "controls", parameter);
-    m_mloop->sendMessage(std::move(msg));
+	emit metadataChanged(metadata);
 }
 
+// Control methods
 
-void Mediaplayer::control(QString control)
-{
-    QJsonObject parameter;
-
-    Mediaplayer::control(control, parameter);
-}
-
+// For backwards compatibility
 void Mediaplayer::disconnect()
 {
-    control("disconnect");
+	disconnectBluetooth();
 }
 
+// For backwards compatibility
 void Mediaplayer::connect()
 {
-    control("connect");
+	connectBluetooth();
 }
+
+void Mediaplayer::disconnectBluetooth()
+{
+	// Disconnect from Bluetooth media
+}
+
+void Mediaplayer::connectBluetooth()
+{
+	// Connect to Bluetooth media
+}
+
 void Mediaplayer::play()
 {
-    control("play");
+	m_backend->play();
 }
 
 void Mediaplayer::pause()
 {
-    control("pause");
+	m_backend->pause();
 }
 
 void Mediaplayer::previous()
 {
-    control("previous");
+	m_backend->previous();
 }
 
 void Mediaplayer::next()
 {
-    control("next");
+	m_backend->next();
 }
 
 void Mediaplayer::seek(int milliseconds)
 {
-    QJsonObject parameter;
-    parameter.insert("position", QString::number(milliseconds));
-
-    control("seek", parameter);
+	m_backend->seek(milliseconds);
 }
 
 void Mediaplayer::fastforward(int milliseconds)
 {
-    QJsonObject parameter;
-    parameter.insert("position", QString::number(milliseconds));
-
-    control("fast-forward", parameter);
+	m_backend->fastforward(milliseconds);
 }
 
 void Mediaplayer::rewind(int milliseconds)
 {
-    QJsonObject parameter;
-    parameter.insert("position", QString::number(milliseconds));
-
-    control("rewind", parameter);
+	m_backend->rewind(milliseconds);
 }
 
 void Mediaplayer::picktrack(int track)
 {
-    QJsonObject parameter;
-    parameter.insert("index", QString::number(track));
-
-    control("pick-track", parameter);
+	m_backend->picktrack(track);
 }
 
 void Mediaplayer::volume(int volume)
 {
-    QJsonObject parameter;
-    parameter.insert("volume", QString(volume));
-
-    control("volume", parameter);
+	m_backend->volume(volume);
 }
 
 void Mediaplayer::loop(QString state)
 {
-    QJsonObject parameter;
-    parameter.insert("state", state);
-
-    control("loop", parameter);
-}
-
-void Mediaplayer::onConnected()
-{
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-        if (!msg)
-            return;
-
-        CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        mpmsg->createRequest("mediaplayer", "subscribe", parameter);
-        m_mloop->sendMessage(std::move(msg));
-    }
-}
-
-void Mediaplayer::onDisconnected()
-{
-    QStringListIterator eventIterator(events);
-
-    while (eventIterator.hasNext()) {
-        std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
-        if (!msg)
-            return;
-
-	CallMessage* mpmsg = static_cast<CallMessage*>(msg.get());
-        QJsonObject parameter;
-        parameter.insert("value", eventIterator.next());
-        mpmsg->createRequest("mediaplayer", "unsubscribe", parameter);
-        m_mloop->sendMessage(std::move(msg));
-    }
-}
-
-void Mediaplayer::onMessageReceived(std::shared_ptr<Message> msg)
-{
-    if (!msg)
-        return;
-
-    if (msg->isEvent()){
-        std::shared_ptr<EventMessage> emsg = std::static_pointer_cast<EventMessage>(msg);
-        QString ename = emsg->eventName();
-        QString eapi = emsg->eventApi();
-        QJsonObject data = emsg->eventData();
-        if (eapi != "mediaplayer")
-            return;
-
-        if (ename == "playlist") {
-            updatePlaylist(data.toVariantMap());
-        } else if (ename == "metadata") {
-            QVariantMap map = data.toVariantMap();
-
-                if (map.contains("track")) {
-                    QVariantMap track = map.value("track").toMap();
-
-                    if (track.contains("image")) {
-                        m_context->setContextProperty("AlbumArt",
-                            QVariant::fromValue(track.value("image")));
-                    }
-
-                    if (!track.contains("artist")) {
-                        track.insert("artist", "");
-                        map["track"] = track;
-                    }
-
-                    if (!track.contains("album")) {
-                        track.insert("album", "");
-                        map["track"] = track;
-                    }
-                }
-
-                emit metadataChanged(map);
-            }
-        }
+	m_backend->loop(state);
 }

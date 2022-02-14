@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,25 @@
 #ifndef MEDIAPLAYER_H
 #define MEDIAPLAYER_H
 
-#include <memory>
 #include <QObject>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
-class MessageEngine;
-class Message;
-
 class Playlist : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    Q_PROPERTY(int index READ index NOTIFY indexChanged)
-    Q_PROPERTY(int duration READ duration NOTIFY durationChanged)
-    Q_PROPERTY(QString path READ path NOTIFY pathChanged)
+	Q_PROPERTY(int index READ index NOTIFY indexChanged)
+	Q_PROPERTY(int duration READ duration NOTIFY durationChanged)
+	Q_PROPERTY(QString path READ path NOTIFY pathChanged)
 
-    // METADATA FIELDS
-    Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-    Q_PROPERTY(QString album READ album NOTIFY albumChanged)
-    Q_PROPERTY(QString artist READ artist NOTIFY artistChanged)
-    Q_PROPERTY(QString genre READ genre NOTIFY genreChanged)
+	// METADATA FIELDS
+	Q_PROPERTY(QString title READ title NOTIFY titleChanged)
+	Q_PROPERTY(QString album READ album NOTIFY albumChanged)
+	Q_PROPERTY(QString artist READ artist NOTIFY artistChanged)
+	Q_PROPERTY(QString genre READ genre NOTIFY genreChanged)
 
-    public:
+public:
         explicit Playlist(QVariantMap& item);
         virtual ~Playlist();
 
@@ -54,7 +50,7 @@ class Playlist : public QObject
         QString artist() { return m_artist; };
         QString genre() { return m_genre; };
 
-    signals:
+signals:
         void indexChanged();
         void durationChanged();
         void pathChanged();
@@ -63,22 +59,26 @@ class Playlist : public QObject
         void artistChanged();
         void genreChanged();
 
-    private:
+private:
         int m_index, m_duration;
         QString m_path, m_title, m_album, m_artist, m_genre;
 };
 
+class MediaplayerMpdBackend;
+
 class Mediaplayer : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    public:
-        explicit Mediaplayer(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
+public:
+        explicit Mediaplayer(QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Mediaplayer();
 
         // controls
-        Q_INVOKABLE void disconnect();
         Q_INVOKABLE void connect();
+        Q_INVOKABLE void disconnect();
+        Q_INVOKABLE void connectBluetooth();
+        Q_INVOKABLE void disconnectBluetooth();
         Q_INVOKABLE void play();
         Q_INVOKABLE void pause();
         Q_INVOKABLE void previous();
@@ -90,27 +90,17 @@ class Mediaplayer : public QObject
         Q_INVOKABLE void volume(int);
         Q_INVOKABLE void loop(QString);
 
+public slots:
         void updatePlaylist(QVariantMap playlist);
+        void updateMetadata(QVariantMap metadata);
 
-    signals:
+signals:
         void metadataChanged(QVariantMap metadata);
 
-    private:
-        std::shared_ptr<MessageEngine> m_mloop;
+private:
         QQmlContext *m_context;
         QList<QObject *> m_playlist;
-
-        void control(QString, QJsonObject);
-        void control(QString);
-
-        void onConnected();
-        void onDisconnected();
-        void onMessageReceived(std::shared_ptr<Message>);
-
-        const QStringList events {
-            "playlist",
-            "metadata",
-        };
+	MediaplayerMpdBackend *m_backend;
 };
 
 #endif // MEDIAPLAYER_H

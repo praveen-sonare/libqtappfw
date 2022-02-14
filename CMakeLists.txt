@@ -12,12 +12,14 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 pkg_check_modules(bluez_glib REQUIRED IMPORTED_TARGET bluez-glib)
 pkg_check_modules(connman_glib REQUIRED IMPORTED_TARGET connman-glib)
+pkg_check_modules(libmpdclient REQUIRED IMPORTED_TARGET libmpdclient)
 
 include(GNUInstallDirs)
 
 set(DEST_DIR "${CMAKE_INSTALL_PREFIX}")
 set(PRIVATE_LIBS "${PRIVATE_LIBS} -lqtappfw-bt
                                   -lqtappfw-hvac
+                                  -lqtappfw-mediaplayer
                                   -lqtappfw-navigation
                                   -lqtappfw-network
                                   -lqtappfw-weather")
@@ -26,6 +28,7 @@ set (SUBDIRS
 	docs
 	bluetooth
 	hvac
+	mediaplayer
 	navigation
 	network
 	weather)
