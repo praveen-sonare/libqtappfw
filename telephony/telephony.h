@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Konsulko Group
+ * Copyright (C) 2017-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@
 #ifndef TELEPHONY_H
 #define TELEPHONY_H
 
-#include <memory>
 #include <QObject>
-
-class MessageEngine;
-class Message;
 
 class Telephony : public QObject
 {
@@ -33,7 +29,7 @@ class Telephony : public QObject
 	Q_PROPERTY(QString callColp READ callColp)
 
 	public:
-		explicit Telephony(QUrl &url, QObject * parent = Q_NULLPTR);
+		explicit Telephony(QObject * parent = Q_NULLPTR);
 		virtual ~Telephony();
 		Q_INVOKABLE void dial(QString number);
 		Q_INVOKABLE void answer();
@@ -71,13 +67,9 @@ class Telephony : public QObject
 	private:
 		bool m_connected;
 		bool m_online;
-		std::shared_ptr<MessageEngine> m_mloop;
 		QString m_call_state;
 		QString m_clip;
 		QString m_colp;
-		void onConnected();
-		void onDisconnected();
-		void onMessageReceived(std::shared_ptr<Message>);
 };
 
 #endif // TELEPHONY_H

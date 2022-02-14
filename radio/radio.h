@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,8 @@
 #ifndef RADIO_H
 #define RADIO_H
 
-#include <memory>
 #include <QObject>
 #include <QtQml/QQmlContext>
-
-class MessageEngine;
-class Message;
-
 
 class Radio : public QObject
 {
@@ -39,7 +34,7 @@ class Radio : public QObject
     Q_PROPERTY(unsigned int frequencyStep READ frequencyStep NOTIFY frequencyStepChanged)
 
     public:
-        explicit Radio(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
+        explicit Radio(QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Radio();
 
         unsigned int band() const { return m_band; }
@@ -76,7 +71,6 @@ class Radio : public QObject
 	void frequencyStepChanged(int frequencyStep);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
 
 	unsigned int m_band;
@@ -88,6 +82,7 @@ class Radio : public QObject
 	bool m_scanning;
 
         void updateFrequencyBandParameters();
+#if 0
         void onConnected();
         void onDisconnected();
         void onMessageReceived(std::shared_ptr<Message> msg);
@@ -97,6 +92,7 @@ class Radio : public QObject
             "station_found",
             "status",
         };
+#endif
 };
 
 #endif // RADIO_H

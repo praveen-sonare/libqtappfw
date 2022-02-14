@@ -8,7 +8,7 @@ add_library(qtappfw-bt-pbap SHARED pbap.cpp)
 target_include_directories(qtappfw-bt-pbap PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-bt-pbap PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-bt-pbap qtappfw-core)
+target_link_libraries(qtappfw-bt-pbap Qt5::Qml)
 set_target_properties(qtappfw-bt-pbap PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

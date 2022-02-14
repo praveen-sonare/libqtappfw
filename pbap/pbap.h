@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,10 @@
 #ifndef PBAP_H
 #define PBAP_H
 
-#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
-
-class MessageEngine;
-class Message;
 
 class PhoneNumber : public QObject
 {
@@ -144,7 +140,7 @@ class Pbap : public QObject
     Q_OBJECT
 
     public:
-        explicit Pbap(QUrl &url, QQmlContext *context, QObject * parent = Q_NULLPTR);
+        explicit Pbap(QQmlContext *context, QObject * parent = Q_NULLPTR);
         virtual ~Pbap();
 
         Q_INVOKABLE void importContacts(int max_entries);
@@ -157,18 +153,12 @@ class Pbap : public QObject
         void statusChanged(bool connected);
 
     private:
-        std::shared_ptr<MessageEngine> m_mloop;
         QQmlContext *m_context;
         QList<QObject *>m_contacts;
         QList<QObject *>m_calls;
         void updateContacts(QJsonArray);
         void updateCalls(QJsonArray);
         void sendSearchResults(QJsonArray);
-
-        // slots
-        void onConnected();
-        void onDisconnected();
-        void onMessageReceived(std::shared_ptr<Message>);
 
         const QStringList events {
             "status",

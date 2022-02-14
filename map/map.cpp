@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, 2020 Konsulko Group
+ * Copyright (C) 2019,2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,17 @@
 
 #include <QDebug>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
 #include "map.h"
 
-Map::Map (QUrl &url, QObject * parent) :
+Map::Map(QObject * parent) :
     QObject(parent)
 {
+#if 0
     m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Map::onConnected);
     QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Map::onDisconnected);
     QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Map::onMessageReceived);
+#endif
 }
 
 Map::~Map()
@@ -39,6 +35,7 @@ Map::~Map()
 
 void Map::compose(QString recipient, QString message)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
@@ -46,30 +43,37 @@ void Map::compose(QString recipient, QString message)
     parameter.insert("message", message);
     btmsg->createRequest("bluetooth-map", "compose", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Map::message(QString handle)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("handle", handle);
     btmsg->createRequest("bluetooth-map", "message", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Map::listMessages(QString folder)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
     parameter.insert("folder", folder);
     btmsg->createRequest("bluetooth-map", "list_messages", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
+#if 0
 void Map::onConnected()
 {
+
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     CallMessage* btmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
@@ -112,3 +116,4 @@ void Map::onMessageReceived(std::shared_ptr<Message> msg)
         }
     }
 }
+#endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,8 @@
 #include <QMetaEnum>
 #include <QMimeDatabase>
 #include <QtQml/QQmlEngine>
+#include <QJsonObject>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
 #include "pbap.h"
 
 
@@ -81,19 +76,23 @@ int RecentCall::stringToEnum(QString key)
     return (value < 0) ? 0 : value;
 }
 
-Pbap::Pbap (QUrl &url, QQmlContext *context, QObject * parent) :
+Pbap::Pbap (QQmlContext *context, QObject * parent) :
     QObject(parent)
 {
+#if 0
     m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
+#endif
     m_context = context;
     m_context->setContextProperty("ContactsModel", QVariant::fromValue(m_contacts));
     qmlRegisterUncreatableType<PhoneNumber>("PhoneNumber", 1, 0, "PhoneNumber", "Enum");
     m_context->setContextProperty("RecentCallModel", QVariant::fromValue(m_calls));
     qmlRegisterUncreatableType<RecentCall>("RecentCall", 1, 0, "RecentCall", "Enum");
 
+#if 0
     QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Pbap::onConnected);
     QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Pbap::onDisconnected);
     QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Pbap::onMessageReceived);
+#endif
 }
 
 Pbap::~Pbap()
@@ -102,6 +101,7 @@ Pbap::~Pbap()
 
 void Pbap::importContacts(int max_entries)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -111,10 +111,12 @@ void Pbap::importContacts(int max_entries)
 
     pmsg->createRequest("bluetooth-pbap", "import", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Pbap::refreshContacts(int max_entries)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -124,10 +126,12 @@ void Pbap::refreshContacts(int max_entries)
 
     pmsg->createRequest("bluetooth-pbap", "contacts", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Pbap::refreshCalls(int max_entries)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -141,10 +145,12 @@ void Pbap::refreshCalls(int max_entries)
 
     pmsg->createRequest("bluetooth-pbap", "history", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Pbap::search(QString number)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -158,6 +164,7 @@ void Pbap::search(QString number)
 
     pmsg->createRequest("bluetooth-pbap", "search", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 bool compareContactPtr(QObject *a, QObject *b)
@@ -263,6 +270,7 @@ void Pbap::sendSearchResults(QJsonArray results)
     emit searchResults(name);
 }
 
+#if 0
 void Pbap::onConnected()
 {
     QStringListIterator eventIterator(events);
@@ -334,3 +342,4 @@ void Pbap::onMessageReceived(std::shared_ptr<Message> msg)
         }
     }
 }
+#endif

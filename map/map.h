@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, 2020 Konsulko Group
+ * Copyright (C) 2019,2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,17 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <memory>
 #include <QObject>
 #include <QJsonArray>
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
-
-class MessageEngine;
-class Message;
 
 class Map : public QObject
 {
     Q_OBJECT
 
     public:
-        explicit Map(QUrl &url, QObject * parent = Q_NULLPTR);
+        explicit Map(QObject * parent = Q_NULLPTR);
         virtual ~Map();
 
         Q_INVOKABLE void compose(QString recipient, QString message);
@@ -44,12 +40,14 @@ class Map : public QObject
         void messageResult(QString handle, QVariantMap message);
 
     private:
+#if 0
         std::shared_ptr<MessageEngine> m_mloop;
 
         // slots
         void onConnected();
         void onDisconnected();
         void onMessageReceived(std::shared_ptr<Message>);
+#endif
 };
 
 #endif // MAP_H

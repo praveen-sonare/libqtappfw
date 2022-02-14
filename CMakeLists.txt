@@ -20,17 +20,25 @@ set(DEST_DIR "${CMAKE_INSTALL_PREFIX}")
 set(PRIVATE_LIBS "${PRIVATE_LIBS} -lqtappfw-bt
                                   -lqtappfw-hvac
                                   -lqtappfw-mediaplayer
+                                  -lqtappfw-map
                                   -lqtappfw-navigation
                                   -lqtappfw-network
+                                  -lqtappfw-pbap
+                                  -lqtappfw-radio
+                                  -lqtappfw-telephony
                                   -lqtappfw-weather")
 
 set (SUBDIRS
 	docs
 	bluetooth
 	hvac
+	map
 	mediaplayer
 	navigation
 	network
+	pbap
+	radio
+	telephony
 	weather)
 
 foreach(subdir ${SUBDIRS})

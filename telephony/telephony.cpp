@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Konsulko Group
+ * Copyright (C) 2017-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,20 @@
 
 #include <QDebug>
 
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
 #include "telephony.h"
 
 
-Telephony::Telephony (QUrl &url, QObject * parent) :
+Telephony::Telephony(QObject * parent) :
 	QObject(parent),
 	m_connected(false),
 	m_call_state("disconnected")
 {
+#if 0
 	m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
 	QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Telephony::onConnected);
 	QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Telephony::onDisconnected);
 	QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Telephony::onMessageReceived);
+#endif
 }
 
 Telephony::~Telephony()
@@ -42,6 +38,7 @@ Telephony::~Telephony()
 
 void Telephony::dial(QString number)
 {
+#if 0
 	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
 	if (!msg)
 		return;
@@ -52,10 +49,12 @@ void Telephony::dial(QString number)
 	parameter.insert("value", number);
 	tmsg->createRequest("telephony", "dial", parameter);
 	m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Telephony::answer()
 {
+#if 0
 	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
 	if (!msg)
 		return;
@@ -63,10 +62,12 @@ void Telephony::answer()
 	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
 	tmsg->createRequest("telephony", "answer");
 	m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Telephony::hangup()
 {
+#if 0
 	std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
 	if (!msg)
 		return;
@@ -74,8 +75,10 @@ void Telephony::hangup()
 	CallMessage *tmsg = static_cast<CallMessage*>(msg.get());
 	tmsg->createRequest("telephony", "hangup");
 	m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
+#if 0
 void Telephony::onConnected()
 {
 	QStringList events {
@@ -161,3 +164,4 @@ void Telephony::onMessageReceived(std::shared_ptr<Message> msg)
 		qWarning() << "Received invalid inbound message";
 
 }
+#endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Konsulko Group
+ * Copyright (C) 2018-2020,2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,10 @@
  */
 
 #include <QDebug>
-
-#include "callmessage.h"
-#include "eventmessage.h"
-#include "responsemessage.h"
-#include "messagefactory.h"
-#include "messageengine.h"
-#include "messageenginefactory.h"
 #include "radio.h"
 
 
-Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
+Radio::Radio(QQmlContext *context, QObject * parent) :
     QObject(parent),
     m_band(1),
     m_frequency(0),
@@ -34,12 +27,14 @@ Radio::Radio (QUrl &url, QQmlContext *context, QObject * parent) :
     m_playing(false),
     m_scanning(false)
 {
+#if 0
     m_mloop = MessageEngineFactory::getInstance().getMessageEngine(url);
     m_context = context;
 
     QObject::connect(m_mloop.get(), &MessageEngine::connected, this, &Radio::onConnected);
     QObject::connect(m_mloop.get(), &MessageEngine::disconnected, this, &Radio::onDisconnected);
     QObject::connect(m_mloop.get(), &MessageEngine::messageReceived, this, &Radio::onMessageReceived);
+#endif
 }
 
 Radio::~Radio()
@@ -48,6 +43,7 @@ Radio::~Radio()
 
 void Radio::setBand(int band)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -58,10 +54,12 @@ void Radio::setBand(int band)
     parameter.insert("band", band ? "FM": "AM");
     rmsg->createRequest("radio", "band", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Radio::setFrequency(int frequency)
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -86,12 +84,14 @@ void Radio::setFrequency(int frequency)
     // the new value comes.
     m_frequency = frequency;
     emit frequencyChanged(m_frequency);
+#endif
 }
 
 // control related methods
 
 void Radio::start()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -101,10 +101,12 @@ void Radio::start()
 
     rmsg->createRequest("radio", "start", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Radio::stop()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -113,6 +115,7 @@ void Radio::stop()
     QJsonObject parameter;
     rmsg->createRequest("radio", "stop", parameter);
     m_mloop->sendMessage(std::move(msg));
+#endif
 }
 
 void Radio::scanForward()
@@ -120,6 +123,7 @@ void Radio::scanForward()
     if (m_scanning)
         return;
 
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     CallMessage* rmsg = static_cast<CallMessage*>(msg.get());
     QJsonObject parameter;
@@ -129,6 +133,7 @@ void Radio::scanForward()
 
     m_scanning = true;
     emit scanningChanged(m_scanning);
+#endif
 }
 
 void Radio::scanBackward()
@@ -136,6 +141,7 @@ void Radio::scanBackward()
     if (m_scanning)
         return;
 
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -148,10 +154,12 @@ void Radio::scanBackward()
 
     m_scanning = true;
     emit scanningChanged(m_scanning);
+#endif
 }
 
 void Radio::scanStop()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -163,10 +171,12 @@ void Radio::scanStop()
 
     m_scanning = false;
     emit scanningChanged(m_scanning);
+#endif
 }
 
 void Radio::updateFrequencyBandParameters()
 {
+#if 0
     std::unique_ptr<Message> msg = MessageFactory::getInstance().createOutboundMessage(MessageId::Call);
     if (!msg)
         return;
@@ -184,8 +194,10 @@ void Radio::updateFrequencyBandParameters()
     rmsg = static_cast<CallMessage*>(msg2.get());
     rmsg->createRequest("radio", "frequency_step", parameter);
     m_mloop->sendMessage(std::move(msg2));
+#endif
 }
 
+#if 0
 void Radio::onConnected()
 {
     QStringListIterator eventIterator(events);
@@ -279,3 +291,4 @@ void Radio::onMessageReceived(std::shared_ptr<Message> msg)
         }
     }
 }
+#endif

@@ -8,7 +8,7 @@ add_library(qtappfw-bt-map SHARED map.cpp)
 target_include_directories(qtappfw-bt-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-bt-map PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-bt-map qtappfw-core)
+target_link_libraries(qtappfw-bt-map Qt5::Qml)
 set_target_properties(qtappfw-bt-map PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

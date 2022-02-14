@@ -8,7 +8,7 @@ add_library(qtappfw-radio SHARED radio.cpp)
 target_include_directories(qtappfw-radio PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-radio PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-radio qtappfw-core)
+target_link_libraries(qtappfw-radio Qt5::Qml)
 set_target_properties(qtappfw-radio PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1
