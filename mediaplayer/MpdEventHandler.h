@@ -18,9 +18,6 @@
 #define MPD_EVENT_HANDLER_H
 
 #include <QObject>
-//#include <QThread>
-//#include <QTimer>
-//#include <QMutex>
 #include <mpd/client.h>
 
 // Use a 60s timeout on our MPD connection

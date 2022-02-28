@@ -5,13 +5,15 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtappfw-mediaplayer.pc
 
 add_library(qtappfw-mediaplayer SHARED
 	mediaplayer.cpp
+	MediaplayerBackend.cpp
 	MediaplayerMpdBackend.cpp
+	MediaplayerBluezBackend.cpp
 	MpdEventHandler.cpp)
 
 target_include_directories(qtappfw-mediaplayer PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(qtappfw-mediaplayer PUBLIC "${CMAKE_INSTALL_INCLUDEDIR}")
 
-target_link_libraries(qtappfw-mediaplayer Qt5::Qml PkgConfig::libmpdclient)
+target_link_libraries(qtappfw-mediaplayer qtappfw-bt Qt5::Qml PkgConfig::libmpdclient)
 set_target_properties(qtappfw-mediaplayer PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION 1

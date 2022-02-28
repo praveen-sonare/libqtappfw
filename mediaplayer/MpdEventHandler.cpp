@@ -15,6 +15,7 @@
  */
 
 #include <QDebug>
+#include <QFileInfo>
 #include "MpdEventHandler.h"
 
 MpdEventHandler::MpdEventHandler(QObject *parent) :
@@ -101,6 +102,13 @@ void MpdEventHandler::handleQueueEvent(void)
 		QString genre(mpd_song_get_tag(song, MPD_TAG_GENRE, 0));
 		QString uri(mpd_song_get_uri(song));
 		int pos = mpd_song_get_pos(song);
+
+		if (title.isEmpty()) {
+			// If there's no tag, use the filename
+			QFileInfo fi(uri);
+			title = fi.fileName();
+		}
+
 		//qDebug() << "Queue[" << pos << "]: " << artist << " - " << title << " / " << album << ", genre " << genre;
 
 		QVariantMap track;
@@ -138,6 +146,13 @@ void MpdEventHandler::handlePlayerEvent(void)
 		QString genre(mpd_song_get_tag(song, MPD_TAG_GENRE, 0));
 		pos = mpd_song_get_pos(song);
 		uri = mpd_song_get_uri(song);
+
+		if (title.isEmpty()) {
+			// If there's no tag, use the filename
+			QFileInfo fi(uri);
+			title = fi.fileName();
+		}
+
 		//qDebug() << "Current song[" << pos << "]: " << artist << " - " << title << " / " << album << ", genre " << genre;
 
 		track["title"] = title;
@@ -147,6 +162,7 @@ void MpdEventHandler::handlePlayerEvent(void)
 		track["index"] = pos;
 		track["duration"] = mpd_song_get_duration_ms(song);
 		track["path"] = uri;
+
 		mpd_song_free(song);
 
 		metadata["track"] = track;

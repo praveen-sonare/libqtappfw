@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef MEDIAPLAYER_MPD_BACKEND_H
-#define MEDIAPLAYER_MPD_BACKEND_H
+#ifndef MEDIAPLAYER_BLUEZ_BACKEND_H
+#define MEDIAPLAYER_BLUEZ_BACKEND_H
 
 #include <QObject>
 #include <QtQml/QQmlContext>
 #include <QThread>
 #include <QTimer>
 #include <QMutex>
-#include <mpd/client.h>
+
 #include "MediaplayerBackend.h"
 #include "mediaplayer.h"
+#include "bluetooth.h"
 
-class MediaplayerMpdBackend : public MediaplayerBackend
+class MediaplayerBluezBackend : public MediaplayerBackend
 {
 	Q_OBJECT
 
 public:
-	explicit MediaplayerMpdBackend(Mediaplayer *player, QQmlContext *context, QObject * parent = Q_NULLPTR);
-	virtual ~MediaplayerMpdBackend();
+	explicit MediaplayerBluezBackend(Mediaplayer *player, QQmlContext *context, QObject * parent = Q_NULLPTR);
+	virtual ~MediaplayerBluezBackend();
 
 	void start();
 	void refresh_metadata();
@@ -48,35 +49,22 @@ public:
 	void volume(int);
 	void loop(QString);
 
+	// Bluetooth specific
+	void connect_media();
+	void disconnect_media();
+
 signals:
-	void startHandler(void);
-        void metadataUpdate(QVariantMap metadata);
-	void positionMetadataUpdate(QVariantMap metadata);
+	void metadataUpdate(QVariantMap metadata);
 
 private slots:
-	void connectionKeepaliveTimeout(void);
-	void songPositionTimeout(void);
-	void updatePlaybackState(int queue_pos, int song_pos_ms, bool state);
 	void updateMetadata(QVariantMap metadata);
 
 private:
 	Mediaplayer *m_player;
-
-	// MPD connection for sending commands
-	struct mpd_connection *m_mpd_conn;
-	QTimer *m_mpd_conn_timer;
-	QMutex m_mpd_conn_mutex;
-
-	int m_queue_pos = -1;
-	int m_song_pos_ms = 0;
-	bool m_playing = false;
-	QTimer *m_song_pos_timer;
-	QMutex m_state_mutex;
-
-	QThread m_handlerThread;
+	Bluetooth *m_bluetooth;
 
         // Cached metadata to simplify refresh requests (e.g. on source switch)
         QVariantMap m_cached_metadata;
 };
 
-#endif // MEDIAPLAYER_MPD_BACKEND_H
+#endif // MEDIAPLAYER_BLUEZ_BACKEND_H
