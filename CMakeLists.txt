@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(OE_QMAKE_PATH_EXTERNAL_HOST_BINS $ENV{OE_QMAKE_PATH_HOST_BINS})
 
 find_package(Qt5Qml REQUIRED)
+find_package(Qt5WebSockets REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
@@ -26,6 +27,7 @@ set(PRIVATE_LIBS "${PRIVATE_LIBS} -lqtappfw-bt
                                   -lqtappfw-pbap
                                   -lqtappfw-radio
                                   -lqtappfw-telephony
+                                  -lqtappfw-vehicle-signals
                                   -lqtappfw-weather")
 
 set (SUBDIRS
@@ -39,6 +41,7 @@ set (SUBDIRS
 	pbap
 	radio
 	telephony
+	vehicle-signals
 	weather)
 
 foreach(subdir ${SUBDIRS})
