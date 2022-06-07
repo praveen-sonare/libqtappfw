@@ -1,5 +1,5 @@
  /*
- * Copyright (C) 2019-2021 Konsulko Group
+ * Copyright (C) 2019-2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,40 +17,46 @@
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
 
-#include <memory>
 #include <QObject>
-#include <QtQml/QQmlListProperty>
+#include <QVariant>
+
+class VehicleSignals;
 
 class Navigation : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    public:
-        explicit Navigation(QObject * parent = Q_NULLPTR);
-        virtual ~Navigation();
+public:
+	explicit Navigation(VehicleSignals *vs, QObject *parent = Q_NULLPTR);
+	virtual ~Navigation();
 
-        Q_INVOKABLE void broadcastPosition(double lat, double lon, double drc, double dst);
-        Q_INVOKABLE void broadcastRouteInfo(double lat, double lon, double route_lat, double route_lon);
-        Q_INVOKABLE void broadcastStatus(QString state);
+	Q_INVOKABLE void broadcastPosition(double lat, double lon, double drc, double dst);
+	Q_INVOKABLE void broadcastRouteInfo(double lat, double lon, double route_lat, double route_lon);
+	Q_INVOKABLE void broadcastStatus(QString state);
 
-        // only support one waypoint for now
-        Q_INVOKABLE void sendWaypoint(double lat, double lon);
+	// only support one waypoint for now
+	Q_INVOKABLE void sendWaypoint(double lat, double lon);
 
-    signals:
-        void statusEvent(QVariantMap data);
-        void positionEvent(QVariantMap data);
-        void waypointsEvent(QVariantMap data);
+signals:
+	void statusEvent(QVariantMap data);
+	void positionEvent(QVariantMap data);
+	void waypointsEvent(QVariantMap data);
 
-    private:
-        // slots
-        void onConnected();
-        void onDisconnected();
+private slots:
+	void onConnected();
+	void onAuthorized();
+	void onDisconnected();
+	void onSignalNotification(QString path, QString value, QString timestamp);
 
-        const QStringList events {
-            "status",
-            "position",
-            "waypoints",
-        };
+private:
+	VehicleSignals *m_vs;
+	bool m_connected;
+	double m_latitude;
+	double m_longitude;
+	double m_heading;
+	double m_distance;
+	double m_dest_latitude;
+	double m_dest_longitude;
 };
 
 #endif // NAVIGATION_H
