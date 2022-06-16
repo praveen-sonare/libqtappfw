@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Konsulko Group
+ * Copyright (C) 2020-2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,35 @@
 #include <QtQml/QQmlContext>
 #include <QtQml/QQmlListProperty>
 
+class VehicleSignals;
+
 class HVAC : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    Q_PROPERTY(int fanSpeed READ get_fanspeed WRITE set_fanspeed NOTIFY fanSpeedChanged)
-    Q_PROPERTY(int leftTemperature READ get_temp_left_zone WRITE set_temp_left_zone NOTIFY leftTemperatureChanged)
-    Q_PROPERTY(int rightTemperature READ get_temp_right_zone WRITE set_temp_right_zone NOTIFY rightTemperatureChanged)
+	Q_PROPERTY(int fanSpeed READ get_fanspeed WRITE set_fanspeed NOTIFY fanSpeedChanged)
+	Q_PROPERTY(int leftTemperature READ get_temp_left_zone WRITE set_temp_left_zone NOTIFY leftTemperatureChanged)
+	Q_PROPERTY(int rightTemperature READ get_temp_right_zone WRITE set_temp_right_zone NOTIFY rightTemperatureChanged)
 
-    public:
-        explicit HVAC(QObject * parent = Q_NULLPTR);
+public:
+	explicit HVAC(VehicleSignals *vs, QObject * parent = Q_NULLPTR);
         virtual ~HVAC();
 
-    signals:
+signals:
         void fanSpeedChanged(int fanSpeed);
         void leftTemperatureChanged(int temp);
         void rightTemperatureChanged(int temp);
         void languageChanged(QString language);
 
-    private:
+private slots:
+	void onConnected();
+	void onAuthorized();
+	void onDisconnected();
+
+private:
+	VehicleSignals *m_vs;
+	bool m_connected;
+
         int m_fanspeed;
         int m_temp_left_zone;
         int m_temp_right_zone;
@@ -50,7 +60,6 @@ class HVAC : public QObject
         int get_temp_left_zone() const { return m_temp_left_zone; };
         int get_temp_right_zone() const { return m_temp_right_zone; };
 
-        void control(QString verb, QString field, int value);
         void set_fanspeed(int speed);
         void set_temp_left_zone(int temp);
         void set_temp_right_zone(int temp);
