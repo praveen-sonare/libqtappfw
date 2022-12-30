@@ -337,7 +337,7 @@ bool VehicleSignals::parseData(const QJsonObject &response, QString &path, QStri
 	} else if (dp["value"].isString()) {
 		value = dp["value"].toString();
 	} else if (dp["value"].isDouble()) {
-		value.setNum(dp["value"].toDouble());
+		value = QString::number(dp["value"].toDouble(), 'f', 9);
 	} else if (dp["value"].isBool()) {
 		value = dp["value"].toBool() ? "true" : "false";
 	} else {
