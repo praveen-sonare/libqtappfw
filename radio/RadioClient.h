@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef RADIO_H
-#define RADIO_H
+#ifndef RADIO_CLIENT_H
+#define RADIO_CLIENT_H
 
 #include <QObject>
 #include <QtQml/QQmlContext>
 
-class Radio : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(unsigned int band READ band WRITE setBand NOTIFY bandChanged)
-    Q_PROPERTY(unsigned int amBand READ amBand CONSTANT)
-    Q_PROPERTY(unsigned int fmBand READ fmBand CONSTANT)
-    Q_PROPERTY(unsigned int frequency READ frequency WRITE setFrequency NOTIFY frequencyChanged)
-    Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
-    Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged)
-    Q_PROPERTY(unsigned int minFrequency READ minFrequency NOTIFY minFrequencyChanged)
-    Q_PROPERTY(unsigned int maxFrequency READ maxFrequency NOTIFY maxFrequencyChanged)
-    Q_PROPERTY(unsigned int frequencyStep READ frequencyStep NOTIFY frequencyStepChanged)
+class RadioGrpcClient;
 
-    public:
-        explicit Radio(QQmlContext *context, QObject * parent = Q_NULLPTR);
-        virtual ~Radio();
+class RadioClient : public QObject
+{
+	Q_OBJECT
+	Q_PROPERTY(unsigned int band READ band WRITE setBand NOTIFY bandChanged)
+	Q_PROPERTY(unsigned int amBand READ amBand CONSTANT)
+	Q_PROPERTY(unsigned int fmBand READ fmBand CONSTANT)
+	Q_PROPERTY(unsigned int frequency READ frequency WRITE setFrequency NOTIFY frequencyChanged)
+	Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
+	Q_PROPERTY(bool scanning READ scanning NOTIFY scanningChanged)
+	Q_PROPERTY(unsigned int minFrequency READ minFrequency NOTIFY minFrequencyChanged)
+	Q_PROPERTY(unsigned int maxFrequency READ maxFrequency NOTIFY maxFrequencyChanged)
+	Q_PROPERTY(unsigned int frequencyStep READ frequencyStep NOTIFY frequencyStepChanged)
+
+public:
+        explicit RadioClient(QQmlContext *context, QObject * parent = Q_NULLPTR);
+        virtual ~RadioClient();
 
         unsigned int band() const { return m_band; }
         void setBand(int band);
@@ -61,7 +63,13 @@ class Radio : public QObject
         Q_INVOKABLE void scanBackward();
         Q_INVOKABLE void scanStop();
 
-    signals:
+public slots:
+	void updateBand(int band);
+	void updateFrequency(int frequency);
+	void updatePlaying(bool status);
+	void updateScanning(int station_found);
+	
+signals:
 	void bandChanged(int band);
 	void frequencyChanged(int frequency);
 	void playingChanged(bool status);
@@ -70,9 +78,11 @@ class Radio : public QObject
 	void maxFrequencyChanged(int maxFrequency);
 	void frequencyStepChanged(int frequencyStep);
 
-    private:
+private:
         QQmlContext *m_context;
 
+	RadioGrpcClient *m_radio;
+  
 	unsigned int m_band;
 	unsigned int m_frequency;
 	unsigned int m_minFrequency;
@@ -80,19 +90,6 @@ class Radio : public QObject
 	unsigned int m_frequencyStep;
         bool m_playing;
 	bool m_scanning;
-
-        void updateFrequencyBandParameters();
-#if 0
-        void onConnected();
-        void onDisconnected();
-        void onMessageReceived(std::shared_ptr<Message> msg);
-
-        const QStringList events {
-            "frequency",
-            "station_found",
-            "status",
-        };
-#endif
 };
 
 #endif // RADIO_H
