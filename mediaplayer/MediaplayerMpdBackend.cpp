@@ -19,14 +19,15 @@
 #include "MpdEventHandler.h"
 #include "mediaplayer.h"
 
-// Use a 60s timeout on our MPD connection
+// Use a 30s timeout on our MPD connection
 // NOTE: The connection is actively poked at a higher frequency than
 //       this to ensure we don't hit the timeout.  The alternatives
 //       are to either open and close a connection for every command,
 //       or try to keep the connection in idle mode when not using it.
 //       The latter is deemed too complicated for our purposes for now,
 //       due to it likely requiring another thread.
-#define MPD_CONNECTION_TIMEOUT	60000
+#define MPD_CONNECTION_TIMEOUT	30000
+#define MPD_KEEPALIVE_TIMEOUT	5000
 
 MediaplayerMpdBackend::MediaplayerMpdBackend(Mediaplayer *player, QQmlContext *context, QObject *parent) :
 	MediaplayerBackend(player, parent)
@@ -43,7 +44,7 @@ MediaplayerMpdBackend::MediaplayerMpdBackend(Mediaplayer *player, QQmlContext *c
 	// Set up connection keepalive timer
 	m_mpd_conn_timer = new QTimer(this);
 	connect(m_mpd_conn_timer, &QTimer::timeout, this, &MediaplayerMpdBackend::connectionKeepaliveTimeout);
-	m_mpd_conn_timer->start(MPD_CONNECTION_TIMEOUT / 2);
+	m_mpd_conn_timer->start(MPD_KEEPALIVE_TIMEOUT);
 
 	m_song_pos_timer = new QTimer(this);
 	connect(m_song_pos_timer, &QTimer::timeout, this, &MediaplayerMpdBackend::songPositionTimeout);
@@ -57,6 +58,7 @@ MediaplayerMpdBackend::MediaplayerMpdBackend(Mediaplayer *player, QQmlContext *c
 	// Create thread to handle polling for MPD events
 	MpdEventHandler *handler = new MpdEventHandler();
 	handler->moveToThread(&m_handlerThread);
+	connect(&m_handlerThread, &QThread::finished, this, &MediaplayerMpdBackend::handleHandlerFinish);
 	connect(&m_handlerThread, &QThread::finished, handler, &QObject::deleteLater);
 	connect(this,
 		&MediaplayerMpdBackend::startHandler,
@@ -169,24 +171,36 @@ void MediaplayerMpdBackend::connectionKeepaliveTimeout(void)
 	m_mpd_conn_mutex.lock();
 
 	// Clear any lingering non-fatal errors
-	if (!mpd_connection_clear_error(m_mpd_conn)) {
+	if (m_mpd_conn && !mpd_connection_clear_error(m_mpd_conn)) {
 		// NOTE: There should likely be an attempt to reconnect here,
 		//       but it definitely would complicate things for all the
 		//       other users.
 		qWarning() << "MPD connection in error state!";
-		m_mpd_conn_mutex.unlock();
-		return;
+		mpd_connection_free(m_mpd_conn);
+		m_mpd_conn = NULL;
+		m_mpd_conn_timer->stop();
 	}
-
-	struct mpd_status *status = mpd_run_status(m_mpd_conn);
-	if (!status) {
-		qWarning() << "MPD connection status check failed";
-	} else {
-		mpd_status_free(status);
-	}
-
 	m_mpd_conn_mutex.unlock();
 }
+
+void MediaplayerMpdBackend::handleHandlerFinish(void)
+{
+	m_mpd_conn_mutex.lock();
+
+	// If the event thread finished, our connection is likely dead.
+	// Given the behavior seen when mpd is hung is most client API
+	// calls hang, trying to determine mpd liveliness here seems
+	// problematic. Attempting to reconnect would probably be the
+	// only robust solution.
+	mpd_connection_free(m_mpd_conn);
+	m_mpd_conn = NULL;
+
+	m_mpd_conn_mutex.unlock();
+
+	m_mpd_conn_timer->stop();
+	delete m_mpd_conn_timer;
+}
+
 
 void MediaplayerMpdBackend::songPositionTimeout(void)
 {
@@ -271,7 +285,7 @@ void MediaplayerMpdBackend::play()
 	m_mpd_conn_mutex.lock();
 
 	m_state_mutex.lock();
-	if (!m_playing) {
+	if (m_mpd_conn && !m_playing) {
 		mpd_run_play(m_mpd_conn);
 	}
 	m_state_mutex.unlock();
@@ -284,7 +298,7 @@ void MediaplayerMpdBackend::pause()
 	m_mpd_conn_mutex.lock();
 
 	m_state_mutex.lock();
-	if (m_playing) {
+	if (m_mpd_conn && m_playing) {
 		mpd_run_pause(m_mpd_conn, true);
 	}
 	m_state_mutex.unlock();
@@ -298,7 +312,7 @@ void MediaplayerMpdBackend::previous()
 
 	// MPD only allows next/previous if playing
 	m_state_mutex.lock();
-	if (m_playing) {
+	if (m_mpd_conn && m_playing) {
 		mpd_run_previous(m_mpd_conn);
 	}
 	m_state_mutex.unlock();
@@ -312,7 +326,7 @@ void MediaplayerMpdBackend::next()
 
 	// MPD only allows next/previous if playing
 	m_state_mutex.lock();
-	if (m_playing) {
+	if (m_mpd_conn && m_playing) {
 		mpd_run_next(m_mpd_conn);
 	}
 	m_state_mutex.unlock();
@@ -324,9 +338,11 @@ void MediaplayerMpdBackend::seek(int milliseconds)
 {
 	m_mpd_conn_mutex.lock();
 
-	float t = milliseconds;
-	t /= 1000.0;
-	mpd_run_seek_current(m_mpd_conn, t, false);
+	if (m_mpd_conn) {
+		float t = milliseconds;
+		t /= 1000.0;
+		mpd_run_seek_current(m_mpd_conn, t, false);
+	}
 
 	m_mpd_conn_mutex.unlock();
 }
@@ -336,9 +352,11 @@ void MediaplayerMpdBackend::fastforward(int milliseconds)
 {
 	m_mpd_conn_mutex.lock();
 
-	float t = milliseconds;
-	t /= 1000.0;
-	mpd_run_seek_current(m_mpd_conn, t, true);
+	if (m_mpd_conn) {
+		float t = milliseconds;
+		t /= 1000.0;
+		mpd_run_seek_current(m_mpd_conn, t, true);
+	}
 
 	m_mpd_conn_mutex.unlock();
 }
@@ -348,9 +366,11 @@ void MediaplayerMpdBackend::rewind(int milliseconds)
 {
 	m_mpd_conn_mutex.lock();
 
-	float t = -milliseconds;
-	t /= 1000.0;
-	mpd_run_seek_current(m_mpd_conn, t, true);
+	if (m_mpd_conn) {
+		float t = -milliseconds;
+		t /= 1000.0;
+		mpd_run_seek_current(m_mpd_conn, t, true);
+	}
 
 	m_mpd_conn_mutex.unlock();
 }
@@ -359,7 +379,7 @@ void MediaplayerMpdBackend::picktrack(int track)
 {
 	m_mpd_conn_mutex.lock();
 
-	if (track >= 0) {
+	if (m_mpd_conn && track >= 0) {
 		mpd_run_play_pos(m_mpd_conn, track);
 	}
 
@@ -383,10 +403,12 @@ void MediaplayerMpdBackend::loop(QString state)
 	// mpd_run_single_state(m_mpd_conn, MPD_SINGLE_OFF) (default)
 	// mpd_run_repeat(m_mpd_conn, true) to loop
 
-	if (state == "playlist") {
-		mpd_run_repeat(m_mpd_conn, true);
-	} else {
-		mpd_run_repeat(m_mpd_conn, false);
+	if (m_mpd_conn) {
+		if (state == "playlist") {
+			mpd_run_repeat(m_mpd_conn, true);
+		} else {
+			mpd_run_repeat(m_mpd_conn, false);
+		}
 	}
 
 	m_mpd_conn_mutex.unlock();

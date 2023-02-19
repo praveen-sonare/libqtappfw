@@ -55,6 +55,7 @@ signals:
 
 private slots:
 	void connectionKeepaliveTimeout(void);
+	void handleHandlerFinish(void);
 	void songPositionTimeout(void);
 	void updatePlaybackState(int queue_pos, int song_pos_ms, bool state);
 	void updateMetadata(QVariantMap metadata);
