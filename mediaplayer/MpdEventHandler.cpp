@@ -16,6 +16,7 @@
 
 #include <QDebug>
 #include <QFileInfo>
+#include <QThread>
 #include "MpdEventHandler.h"
 
 MpdEventHandler::MpdEventHandler(QObject *parent) :
@@ -62,9 +63,13 @@ void MpdEventHandler::handleEvents(void)
 		else if (events & MPD_IDLE_PLAYER) {
 			handlePlayerEvent();
 		}
+		if (mpd_connection_get_error(m_mpd_conn) != MPD_ERROR_SUCCESS) {
+			done = true;
+		}
 	}
 
 	qDebug() << "MpdEventHandler::handleEvents: exit";
+	QThread::currentThread()->quit();
 }
 
 void MpdEventHandler::handleDatabaseEvent(void)
@@ -176,6 +181,14 @@ void MpdEventHandler::handlePlayerEvent(void)
 	// corking in WirePlumber...
 
 	struct mpd_status *status = mpd_run_status(m_mpd_conn);
+	if (!status) {
+		// mpd has gone away, attempt to get the UI into a good state
+		metadata["position"] = 0;
+		metadata["status"] = QString("stopped");
+		emit metadataUpdate(metadata);
+		emit playbackStateUpdate(pos, 0, false);
+		return;
+	}
 
 	int elapsed_ms = mpd_status_get_elapsed_ms(status);
 	metadata["position"] = elapsed_ms;
