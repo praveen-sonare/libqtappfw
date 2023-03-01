@@ -17,7 +17,7 @@
 project (
   'libqtappfw',
   ['cpp'],
-  version : '1.0.0',
+  version : '2.0.1',
   license : 'Apache-2.0',
   meson_version : '>= 0.46.0',
   default_options :
