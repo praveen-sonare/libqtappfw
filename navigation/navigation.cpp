@@ -87,7 +87,9 @@ void Navigation::broadcastStatus(QString state)
 	if (!(m_vs && m_connected))
 		return;
 
-	m_vs->set("Vehicle.Cabin.Infotainment.Navigation.State", state);
+	// The signal states have been changed to all uppercase to match
+	// VSS 3.x expectations, enforce that.
+	m_vs->set("Vehicle.Cabin.Infotainment.Navigation.State", state.toUpper());
 }
 
 void Navigation::onConnected()
